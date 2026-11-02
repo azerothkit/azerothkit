@@ -33,15 +33,6 @@ impl SessionGuard {
 
         let guard = Self { shutdown };
 
-        #[cfg(target_os = "macos")]
-        match std::fs::remove_file(socket_path()) {
-            Ok(()) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => {
-                return Err(error).context("Failed to remove stale capture socket");
-            }
-        }
-
         Ok(guard)
     }
 }
@@ -50,20 +41,8 @@ impl Drop for SessionGuard {
     fn drop(&mut self) {
         let _ = self.shutdown.send(());
 
-        #[cfg(target_os = "macos")]
-        if let Err(error) = std::fs::remove_file(socket_path()) {
-            if error.kind() != std::io::ErrorKind::NotFound {
-                log::warn!("Failed to remove capture socket: {error}");
-            }
-        }
-
         ACTIVE.store(false, Ordering::Release);
     }
-}
-
-#[cfg(target_os = "macos")]
-fn socket_path() -> std::path::PathBuf {
-    format!("/tmp/mitmproxy-{}", std::process::id()).into()
 }
 
 pub struct Capture {

@@ -7,9 +7,15 @@ publish.workspace = true
 
 [dependencies]
 anyhow = "1.0.104"
+directories = "6"
 log = "0.4.35"
 mitmproxy = {
     git = "https://github.com/azerothkit/mitmproxy_rs.git",
     rev = "cddbee77659bae2e8cc210f73b6c3eaa9c34cafe"
 }
-tokio = { version = "1.54.1", features = ["rt", "sync", "io-util", "time"] }
+pem = "4"
+rcgen = { version = "0.14.10", features = ["x509-parser"] }
+rustls-native-certs = "0.8.5"
+time = "0.3"
+tokio = { version = "1.54.1", features = ["rt", "sync", "io-util", "time", "net"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
