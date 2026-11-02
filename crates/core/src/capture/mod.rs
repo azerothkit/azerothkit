@@ -1,26 +1,12 @@
+mod config;
+mod connection;
 mod mitmproxy;
+mod error;
 
-use std::path::PathBuf;
+pub use config::CaptureConfig;
+pub use connection::{CapturedConnection, CapturedTransport, RemoteEndpoint};
+pub use mitmproxy::{Capture, CapturedDatagram, CapturedStream};
 
-pub use mitmproxy::{Capture, CapturedStream};
-
-#[derive(Debug, Clone)]
-pub struct CaptureConfig {
-    pub filter: String,
-
-    pub helper_executable: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone)]
-pub struct RemoteEndpoint {
-    pub host: String,
-    pub port: u16,
-}
-
-pub struct CapturedConnection {
-    pub id: u64,
-    pub pid: Option<u32>,
-    pub process_name: Option<String>,
-    pub remote: RemoteEndpoint,
-    pub stream: CapturedStream,
-}
+pub(crate) use error::{
+    CaptureFlowClosed, is_capture_flow_closed,
+};

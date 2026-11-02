@@ -126,12 +126,23 @@ impl Authority {
 
     pub(super) fn server_config(
         &self,
-        host: &str,
+        names: &[String],
         alpn: Option<Vec<u8>>,
         provider: Arc<CryptoProvider>,
     ) -> Result<ServerConfig> {
         let key = KeyPair::generate()?;
-        let mut params = CertificateParams::new(vec![host.to_owned()])?;
+        let mut params = CertificateParams::new(names.to_vec())?;
+
+        params.distinguished_name = DistinguishedName::new();
+
+        if let Some(name) = names
+            .iter()
+            .find(|name| name.len() <= 64 && name.parse::<std::net::IpAddr>().is_err())
+        {
+            params
+                .distinguished_name
+                .push(DnType::CommonName, name.as_str());
+        }
 
         params.distinguished_name = DistinguishedName::new();
         params.key_usages = vec![KeyUsagePurpose::DigitalSignature];

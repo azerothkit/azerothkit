@@ -42,6 +42,7 @@ async fn main() -> Result<()> {
             helper_executable,
         },
         tls: tls_enabled.then(TlsConfig::default),
+        handlers: Default::default(),
     };
 
     engine::run(config, async {

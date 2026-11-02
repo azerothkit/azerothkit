@@ -1,0 +1,5 @@
+# Context2Prompt ignore rules (gitignore syntax).
+# Applied on top of .gitignore; use !pattern to re-include ignored entries.
+
+Cargo.lock
+*.protoset
