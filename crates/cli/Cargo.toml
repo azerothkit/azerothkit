@@ -1,0 +1,13 @@
+[package]
+name = "azerothkit-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+azerothkit-core = { version = "0.1.0", path = "../core" }
+env_logger = "0.11.11"
+log = "0.4.35"
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "signal", "net", "io-util", "time"] }
