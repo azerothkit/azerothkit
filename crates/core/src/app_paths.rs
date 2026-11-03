@@ -1,41 +1,36 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use directories::BaseDirs;
+use directories::ProjectDirs;
+use crate::constant::APP_NAME;
 
 #[derive(Debug, Clone)]
 pub struct AppPaths {
-    root: PathBuf,
+    config_dir: PathBuf,
+    data_dir: PathBuf,
 }
 
 impl AppPaths {
     pub fn discover() -> Result<Self> {
-        let directories =
-            BaseDirs::new().context("Failed to determine the user's home directory")?;
+        let project_dirs = ProjectDirs::from("app", "ozd0", APP_NAME)
+            .context("Failed to determine application directories")?;
 
         Ok(Self {
-            root: directories.home_dir().join(".azerothkit"),
+            config_dir: project_dirs.config_dir().to_path_buf(),
+            data_dir: project_dirs.data_local_dir().to_path_buf(),
         })
     }
 
-    pub fn root(&self) -> &Path {
-        &self.root
+    pub fn config_dir(&self) -> &Path {
+        &self.config_dir
     }
 
-    pub fn config_dir(&self) -> PathBuf {
-        self.root.join("config")
-    }
-
-    pub fn data_dir(&self) -> PathBuf {
-        self.root.join("data")
-    }
-
-    pub fn cache_dir(&self) -> PathBuf {
-        self.root.join("cache")
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
     }
 
     pub fn tls_dir(&self) -> PathBuf {
-        self.root.join("tls")
+        self.config_dir.join("tls")
     }
 
     pub fn ca_file(&self) -> PathBuf {
