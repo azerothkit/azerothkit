@@ -1,9 +1,6 @@
 use anyhow::{Result, ensure};
 use bytes::{BufMut, Bytes, BytesMut};
-use flate2::{
-    Compress, Compression, Decompress, FlushCompress,
-    FlushDecompress, Status,
-};
+use flate2::{Compress, Compression, Decompress, FlushCompress, FlushDecompress, Status};
 
 use super::MAX_BODY_SIZE;
 
@@ -42,14 +39,11 @@ impl Inflater {
     pub fn decode(&mut self, payload: &[u8]) -> Result<Bytes> {
         ensure!(payload.len() >= 12, "Short World compression header");
 
-        let expected =
-            u32::from_le_bytes(payload[..4].try_into()?) as usize;
+        let expected = u32::from_le_bytes(payload[..4].try_into()?) as usize;
 
-        let plain_sum =
-            u32::from_le_bytes(payload[4..8].try_into()?);
+        let plain_sum = u32::from_le_bytes(payload[4..8].try_into()?);
 
-        let packed_sum =
-            u32::from_le_bytes(payload[8..12].try_into()?);
+        let packed_sum = u32::from_le_bytes(payload[8..12].try_into()?);
 
         let packed = &payload[12..];
 
@@ -68,17 +62,13 @@ impl Inflater {
         let before_in = self.stream.total_in();
         let before_out = self.stream.total_out();
 
-        let status = self.stream.decompress(
-            packed,
-            &mut output,
-            FlushDecompress::Sync,
-        )?;
+        let status = self
+            .stream
+            .decompress(packed, &mut output, FlushDecompress::Sync)?;
 
-        let consumed =
-            (self.stream.total_in() - before_in) as usize;
+        let consumed = (self.stream.total_in() - before_in) as usize;
 
-        let produced =
-            (self.stream.total_out() - before_out) as usize;
+        let produced = (self.stream.total_out() - before_out) as usize;
 
         ensure!(
             status != Status::StreamEnd,
@@ -130,17 +120,13 @@ impl Deflater {
             let before_in = self.stream.total_in();
             let before_out = self.stream.total_out();
 
-            let status = self.stream.compress(
-                &body[offset..],
-                &mut buffer,
-                FlushCompress::Sync,
-            )?;
+            let status = self
+                .stream
+                .compress(&body[offset..], &mut buffer, FlushCompress::Sync)?;
 
-            let consumed =
-                (self.stream.total_in() - before_in) as usize;
+            let consumed = (self.stream.total_in() - before_in) as usize;
 
-            let produced =
-                (self.stream.total_out() - before_out) as usize;
+            let produced = (self.stream.total_out() - before_out) as usize;
 
             offset += consumed;
             packed.extend_from_slice(&buffer[..produced]);
@@ -184,28 +170,18 @@ mod tests {
         value
             .as_bytes()
             .chunks_exact(2)
-            .map(|pair| {
-                u8::from_str_radix(
-                    std::str::from_utf8(pair).unwrap(),
-                    16,
-                )
-                    .unwrap()
-            })
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
             .collect()
     }
 
     #[test]
     fn reads_python_stream_with_persistent_dictionary() {
-        let first = unhex(
-            "1400000066dadba1c1eaf3aadacee8cac0c0c8c4ccc2cac6cec1c9c5cdc3cbc70f000000ffff",
-        );
+        let first =
+            unhex("1400000066dadba1c1eaf3aadacee8cac0c0c8c4ccc2cac6cec1c9c5cdc3cbc70f000000ffff");
 
-        let second = unhex(
-            "1400000066dadba1a8dc5a4ada8e450c000000ffff",
-        );
+        let second = unhex("1400000066dadba1a8dc5a4ada8e450c000000ffff");
 
-        let expected =
-            unhex("b7014500000102030405060708090a0b0c0d0e0f");
+        let expected = unhex("b7014500000102030405060708090a0b0c0d0e0f");
 
         let mut inflater = Inflater::default();
 
@@ -215,8 +191,7 @@ mod tests {
 
     #[test]
     fn round_trips_multiple_compressed_packets() {
-        let body =
-            unhex("b7014500000102030405060708090a0b0c0d0e0f");
+        let body = unhex("b7014500000102030405060708090a0b0c0d0e0f");
 
         let mut encoder = Deflater::default();
         let mut decoder = Inflater::default();

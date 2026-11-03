@@ -41,19 +41,13 @@ impl CapturedStream {
         }
     }
 
-    fn command(
-        &self,
-        command: TransportCommand,
-    ) -> io::Result<()> {
+    fn command(&self, command: TransportCommand) -> io::Result<()> {
         self.commands
             .send(command)
             .map_err(|_| disconnected("command channel closed"))
     }
 
-    fn poll_drain(
-        &mut self,
-        cx: &mut Context<'_>,
-    ) -> Poll<io::Result<()>> {
+    fn poll_drain(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         let Some(rx) = self.drain_rx.as_mut() else {
             return Poll::Ready(Ok(()));
         };
@@ -61,9 +55,7 @@ impl CapturedStream {
         let result = ready!(Pin::new(rx).poll(cx));
         self.drain_rx = None;
 
-        Poll::Ready(result.map_err(|_| {
-            disconnected("write drain reply dropped")
-        }))
+        Poll::Ready(result.map_err(|_| disconnected("write drain reply dropped")))
     }
 }
 
@@ -88,26 +80,17 @@ impl AsyncRead for CapturedStream {
                 let (tx, rx) = oneshot::channel();
                 let size = output.remaining().min(MAX_CHUNK) as u32;
 
-                this.command(TransportCommand::ReadData(
-                    this.id,
-                    size,
-                    tx,
-                ))?;
+                this.command(TransportCommand::ReadData(this.id, size, tx))?;
 
                 this.read_rx = Some(rx);
             }
 
-            let rx = this
-                .read_rx
-                .as_mut()
-                .expect("pending TCP read");
+            let rx = this.read_rx.as_mut().expect("pending TCP read");
 
             let result = ready!(Pin::new(rx).poll(cx));
             this.read_rx = None;
 
-            this.read_buffer = result.map_err(|_| {
-                disconnected("read reply dropped")
-            })?;
+            this.read_buffer = result.map_err(|_| disconnected("read reply dropped"))?;
 
             this.read_position = 0;
 
@@ -117,8 +100,7 @@ impl AsyncRead for CapturedStream {
             }
         }
 
-        let remaining =
-            &this.read_buffer[this.read_position..];
+        let remaining = &this.read_buffer[this.read_position..];
 
         let size = remaining.len().min(output.remaining());
 

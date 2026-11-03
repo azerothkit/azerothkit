@@ -17,10 +17,7 @@ pub struct SessionStore {
 }
 
 impl SessionStore {
-    pub fn insert_realm_join_secrets(
-        &self,
-        secrets: RealmJoinSecrets,
-    ) -> Result<bool> {
+    pub fn insert_realm_join_secrets(&self, secrets: RealmJoinSecrets) -> Result<bool> {
         let mut state = self
             .state
             .lock()
@@ -34,9 +31,7 @@ impl SessionStore {
         Ok(true)
     }
 
-    pub fn realm_join_secrets(
-        &self,
-    ) -> Result<Vec<RealmJoinSecrets>> {
+    pub fn realm_join_secrets(&self) -> Result<Vec<RealmJoinSecrets>> {
         let state = self
             .state
             .lock()
@@ -45,10 +40,7 @@ impl SessionStore {
         Ok(state.realm_join_secrets.clone())
     }
 
-    pub(crate) fn add_key_data(
-        &self,
-        data: [u8; 64],
-    ) -> Result<bool> {
+    pub(crate) fn add_key_data(&self, data: [u8; 64]) -> Result<bool> {
         self.insert_realm_join_secrets(data.into())
     }
 
@@ -65,19 +57,14 @@ impl SessionStore {
             .collect())
     }
 
-    pub(crate) fn add_world_candidates(
-        &self,
-        keys: &[WorldSessionKey],
-    ) -> Result<()> {
+    pub(crate) fn add_world_candidates(&self, keys: &[WorldSessionKey]) -> Result<()> {
         let mut state = self
             .state
             .lock()
             .map_err(|_| anyhow!("Session store is poisoned"))?;
 
         for key in keys {
-            if !state.world_sessions.contains(key)
-                && !state.world_candidates.contains(key)
-            {
+            if !state.world_sessions.contains(key) && !state.world_candidates.contains(key) {
                 state.world_candidates.push(*key);
             }
         }
@@ -85,9 +72,7 @@ impl SessionStore {
         Ok(())
     }
 
-    pub(crate) fn world_session_candidates(
-        &self,
-    ) -> Result<Vec<WorldSessionKey>> {
+    pub(crate) fn world_session_candidates(&self) -> Result<Vec<WorldSessionKey>> {
         let state = self
             .state
             .lock()
@@ -101,10 +86,7 @@ impl SessionStore {
             .collect())
     }
 
-    pub(crate) fn confirm_world_session(
-        &self,
-        key: WorldSessionKey,
-    ) -> Result<bool> {
+    pub(crate) fn confirm_world_session(&self, key: WorldSessionKey) -> Result<bool> {
         let mut state = self
             .state
             .lock()

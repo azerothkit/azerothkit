@@ -2,12 +2,9 @@ use anyhow::{Context, Result, ensure};
 
 use crate::sessions::{RealmJoinSecrets, WorldSessionKey};
 
-use super::crypto::{
-    KeyCandidate, derive_session, verify_continued,
-};
+use super::crypto::{KeyCandidate, derive_session, verify_continued};
 use super::packets::{
-    AUTH_CHALLENGE, AUTH_CONTINUED, AUTH_SESSION,
-    ENCRYPTED_ACK, ENTER_ENCRYPTED, WorldPacket,
+    AUTH_CHALLENGE, AUTH_CONTINUED, AUTH_SESSION, ENCRYPTED_ACK, ENTER_ENCRYPTED, WorldPacket,
 };
 
 pub enum AuthRequest {
@@ -49,18 +46,8 @@ impl AuthRequest {
                 proof,
             } => sessions
                 .iter()
-                .filter(|session| {
-                    verify_continued(
-                        session,
-                        server,
-                        client,
-                        connection_key,
-                        proof,
-                    )
-                })
-                .map(|session| {
-                    KeyCandidate::new(*session, server, client)
-                })
+                .filter(|session| verify_continued(session, server, client, connection_key, proof))
+                .map(|session| KeyCandidate::new(*session, server, client))
                 .collect::<Vec<_>>(),
         };
 
@@ -113,25 +100,17 @@ impl Handshake {
             (true, AUTH_SESSION | AUTH_CONTINUED) => {
                 ensure!(!self.auth_seen, "Duplicate World authentication");
 
-                let server = self
-                    .server
-                    .context("World AuthChallenge is missing")?;
+                let server = self.server.context("World AuthChallenge is missing")?;
 
                 let request = if packet.opcode == AUTH_SESSION {
-                    ensure!(
-                        payload.len() >= 76,
-                        "Short World AuthSession",
-                    );
+                    ensure!(payload.len() >= 76, "Short World AuthSession",);
 
                     AuthRequest::Initial {
                         server,
                         client: payload[20..52].try_into()?,
                     }
                 } else {
-                    ensure!(
-                        payload.len() >= 72,
-                        "Short World AuthContinuedSession",
-                    );
+                    ensure!(payload.len() >= 72, "Short World AuthContinuedSession",);
 
                     AuthRequest::Continued {
                         server,

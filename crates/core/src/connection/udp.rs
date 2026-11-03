@@ -7,9 +7,7 @@ use tokio::net::UdpSocket;
 use tokio::time::timeout;
 
 use crate::capture::CapturedDatagram;
-use crate::handlers::{
-    Direction, Handler, HandlerInput, HandlerOutput,
-};
+use crate::handlers::{Direction, Handler, HandlerInput, HandlerOutput};
 
 use super::relay::output_chunks;
 
@@ -23,12 +21,7 @@ struct TransferStats {
 }
 
 impl TransferStats {
-    fn record(
-        &mut self,
-        connection_id: u64,
-        direction: Direction,
-        size: usize,
-    ) {
+    fn record(&mut self, connection_id: u64, direction: Direction, size: usize) {
         self.packets += 1;
         self.bytes += size as u64;
 
@@ -113,14 +106,12 @@ pub(super) async fn relay(
                     }
                 }
             })
-                .await;
+            .await;
 
             match step {
                 Ok(result) => result?,
                 Err(_) => {
-                    log::debug!(
-                        "[{connection_id}] UDP flow timed out",
-                    );
+                    log::debug!("[{connection_id}] UDP flow timed out",);
                     break;
                 }
             }
@@ -128,7 +119,7 @@ pub(super) async fn relay(
 
         Ok(())
     }
-        .await;
+    .await;
 
     log::info!(
         "[{connection_id}] UDP summary: remote={remote}, \
@@ -155,17 +146,13 @@ async fn recv_upstream(
         let (size, source) = upstream
             .recv_from(buffer)
             .await
-            .with_context(|| {
-                format!("UDP receive failed for {remote}")
-            })?;
+            .with_context(|| format!("UDP receive failed for {remote}"))?;
 
         if source == remote {
             return Ok(size);
         }
 
-        log::debug!(
-            "Ignoring UDP datagram from {source}; expected {remote}",
-        );
+        log::debug!("Ignoring UDP datagram from {source}; expected {remote}",);
     }
 }
 
@@ -180,9 +167,7 @@ async fn send_upstream(
         let sent = upstream
             .send_to(&datagram, remote)
             .await
-            .with_context(|| {
-                format!("UDP send failed to {remote}")
-            })?;
+            .with_context(|| format!("UDP send failed to {remote}"))?;
 
         ensure!(
             sent == datagram.len(),
@@ -190,11 +175,7 @@ async fn send_upstream(
             datagram.len(),
         );
 
-        stats.record(
-            connection_id,
-            Direction::ClientToServer,
-            sent,
-        );
+        stats.record(connection_id, Direction::ClientToServer, sent);
     }
 
     Ok(())
@@ -212,11 +193,7 @@ async fn send_downstream(
             .await
             .context("Captured UDP send failed")?;
 
-        stats.record(
-            connection_id,
-            Direction::ServerToClient,
-            datagram.len(),
-        );
+        stats.record(connection_id, Direction::ServerToClient, datagram.len());
     }
 
     Ok(())

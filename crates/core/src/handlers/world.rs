@@ -6,11 +6,13 @@ use crate::protocol::world::{WorldCodec, WorldEvent};
 use crate::sessions::SessionStore;
 
 use super::{Direction, Handler, HandlerInput, HandlerOutput};
+use crate::features::WorldPipeline;
 
 pub(super) struct WorldHandler {
     connection_id: u64,
     sessions: Arc<SessionStore>,
     codec: WorldCodec,
+    features: WorldPipeline,
     encryption_announced: bool,
 }
 
@@ -18,11 +20,13 @@ impl WorldHandler {
     pub(super) fn new(
         connection_id: u64,
         sessions: Arc<SessionStore>,
+        features: WorldPipeline,
     ) -> Self {
         Self {
             connection_id,
             sessions,
             codec: WorldCodec::default(),
+            features,
             encryption_announced: false,
         }
     }
@@ -36,7 +40,8 @@ impl Handler for WorldHandler {
 
         let mut output = Vec::new();
 
-        while let Some(event) = self.codec
+        while let Some(event) = self
+            .codec
             .next(from_client)
             .context("World decode failed")?
         {
@@ -48,11 +53,9 @@ impl Handler for WorldHandler {
                 WorldEvent::Packet(frame) => {
                     if let Some(request) = &frame.auth {
                         let secrets = self.sessions.realm_join_secrets()?;
-                        let sessions =
-                            self.sessions.world_session_candidates()?;
+                        let sessions = self.sessions.world_session_candidates()?;
 
-                        let candidates =
-                            request.resolve(&secrets, &sessions)?;
+                        let candidates = request.resolve(&secrets, &sessions)?;
 
                         let keys = candidates
                             .iter()
@@ -78,20 +81,23 @@ impl Handler for WorldHandler {
                         if !self.encryption_announced {
                             self.encryption_announced = true;
 
-                            log::info!(
-                                "[{}] World encryption verified",
-                                self.connection_id,
-                            );
+                            log::info!("[{}] World encryption verified", self.connection_id,);
                         }
                     }
 
+                    let rewritten = if frame.encrypted {
+                        self.features
+                            .process(input.direction, &frame.packets)
+                            .context("World feature processing failed")?
+                    } else {
+                        None
+                    };
+
+                    let packets = rewritten.as_deref().unwrap_or(frame.packets.as_slice());
+
                     output.push(
                         self.codec
-                            .encode(
-                                from_client,
-                                &frame,
-                                &frame.packets,
-                            )
+                            .encode(from_client, &frame, packets)
                             .context("World encode failed")?,
                     );
                 }
@@ -107,10 +113,7 @@ impl Handler for WorldHandler {
         }
     }
 
-    fn finish(
-        &mut self,
-        direction: Direction,
-    ) -> Result<HandlerOutput> {
+    fn finish(&mut self, direction: Direction) -> Result<HandlerOutput> {
         self.codec
             .finish(direction.is_from_client())
             .context("Incomplete World stream at EOF")?;

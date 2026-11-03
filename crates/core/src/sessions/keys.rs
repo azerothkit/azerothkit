@@ -49,10 +49,7 @@ impl WorldSessionKey {
 }
 
 impl std::fmt::Debug for WorldSessionKey {
-    fn fmt(
-        &self,
-        formatter: &mut std::fmt::Formatter<'_>,
-    ) -> std::fmt::Result {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("WorldSessionKey([REDACTED])")
     }
 }

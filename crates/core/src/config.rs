@@ -37,8 +37,7 @@ impl HandlerConfig {
     pub(crate) fn validate(&self) -> Result<()> {
         for rule in &self.rules {
             ensure!(
-                rule.handler == HandlerKind::Passthrough
-                    || rule.transport == Transport::Tcp,
+                rule.handler == HandlerKind::Passthrough || rule.transport == Transport::Tcp,
                 "{:?} handler requires TCP: port {}",
                 rule.handler,
                 rule.port,

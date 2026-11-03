@@ -14,30 +14,23 @@ use crate::sessions::{RealmJoinSecrets, WorldSessionKey};
 type WorldAes = AesGcm<Aes256, U12, U12>;
 
 const SESSION_SEED: [u8; 32] = [
-    0xe8, 0x1e, 0x8b, 0x59, 0x27, 0x62, 0x1e, 0xaa,
-    0x86, 0x15, 0x18, 0xea, 0xc0, 0xbf, 0x66, 0x8c,
-    0x6d, 0xbf, 0x83, 0x93, 0xbc, 0xaa, 0x80, 0x52,
-    0x5b, 0x1e, 0xdc, 0x23, 0xa0, 0x12, 0xb7, 0x50,
+    0xe8, 0x1e, 0x8b, 0x59, 0x27, 0x62, 0x1e, 0xaa, 0x86, 0x15, 0x18, 0xea, 0xc0, 0xbf, 0x66, 0x8c,
+    0x6d, 0xbf, 0x83, 0x93, 0xbc, 0xaa, 0x80, 0x52, 0x5b, 0x1e, 0xdc, 0x23, 0xa0, 0x12, 0xb7, 0x50,
 ];
 
 const CONTINUED_SEED: [u8; 32] = [
-    0x56, 0x5c, 0x61, 0x9c, 0x48, 0x3a, 0x52, 0x1f,
-    0x61, 0x5d, 0x05, 0x49, 0xb2, 0x9a, 0x39, 0xbf,
-    0x4b, 0x97, 0xb0, 0x1b, 0xf9, 0x6c, 0xde, 0xd6,
-    0x80, 0x1d, 0xab, 0x26, 0x02, 0xa9, 0x9b, 0x9d,
+    0x56, 0x5c, 0x61, 0x9c, 0x48, 0x3a, 0x52, 0x1f, 0x61, 0x5d, 0x05, 0x49, 0xb2, 0x9a, 0x39, 0xbf,
+    0x4b, 0x97, 0xb0, 0x1b, 0xf9, 0x6c, 0xde, 0xd6, 0x80, 0x1d, 0xab, 0x26, 0x02, 0xa9, 0x9b, 0x9d,
 ];
 
 const ENCRYPTION_SEED: [u8; 32] = [
-    0x71, 0xc9, 0xed, 0x5a, 0xa7, 0x0e, 0x4d, 0xff,
-    0x4c, 0x36, 0xa6, 0x5a, 0x3e, 0x46, 0x8a, 0x4a,
-    0x5d, 0xa1, 0x48, 0xc8, 0x30, 0x47, 0x4a, 0xde,
-    0xf6, 0x0d, 0x6c, 0xbe, 0x6f, 0xe4, 0x55, 0x73,
+    0x71, 0xc9, 0xed, 0x5a, 0xa7, 0x0e, 0x4d, 0xff, 0x4c, 0x36, 0xa6, 0x5a, 0x3e, 0x46, 0x8a, 0x4a,
+    0x5d, 0xa1, 0x48, 0xc8, 0x30, 0x47, 0x4a, 0xde, 0xf6, 0x0d, 0x6c, 0xbe, 0x6f, 0xe4, 0x55, 0x73,
 ];
 
 fn mac(key: &[u8], parts: &[&[u8]]) -> [u8; 64] {
     let mut state =
-        <Hmac<Sha512> as Mac>::new_from_slice(key)
-            .expect("HMAC accepts arbitrary key lengths");
+        <Hmac<Sha512> as Mac>::new_from_slice(key).expect("HMAC accepts arbitrary key lengths");
 
     for part in parts {
         state.update(part);
@@ -53,10 +46,7 @@ pub(super) fn derive_session(
 ) -> WorldSessionKey {
     let key_hash = Sha512::digest(secrets.as_bytes());
 
-    let seed = mac(
-        &key_hash,
-        &[server, client, &SESSION_SEED],
-    );
+    let seed = mac(&key_hash, &[server, client, &SESSION_SEED]);
 
     let left = Sha512::digest(&seed[..32]);
     let right = Sha512::digest(&seed[32..]);
@@ -73,15 +63,8 @@ pub(super) fn derive_session(
     WorldSessionKey::new(session)
 }
 
-fn derive_encryption(
-    session: &WorldSessionKey,
-    server: &[u8; 32],
-    client: &[u8; 32],
-) -> [u8; 32] {
-    let generated = mac(
-        session.as_bytes(),
-        &[client, server, &ENCRYPTION_SEED],
-    );
+fn derive_encryption(session: &WorldSessionKey, server: &[u8; 32], client: &[u8; 32]) -> [u8; 32] {
+    let generated = mac(session.as_bytes(), &[client, server, &ENCRYPTION_SEED]);
 
     let mut key = [0u8; 32];
     key.copy_from_slice(&generated[..32]);
@@ -107,9 +90,7 @@ fn nonce(from_client: bool, counter: u64) -> Nonce<U12> {
     let mut value = [0u8; 12];
 
     value[..8].copy_from_slice(&counter.to_le_bytes());
-    value[8..].copy_from_slice(
-        if from_client { b"CLNT" } else { b"SRVR" },
-    );
+    value[8..].copy_from_slice(if from_client { b"CLNT" } else { b"SRVR" });
 
     value.into()
 }
@@ -121,11 +102,7 @@ pub struct KeyCandidate {
 }
 
 impl KeyCandidate {
-    pub(super) fn new(
-        session: WorldSessionKey,
-        server: &[u8; 32],
-        client: &[u8; 32],
-    ) -> Self {
+    pub(super) fn new(session: WorldSessionKey, server: &[u8; 32], client: &[u8; 32]) -> Self {
         let key = derive_encryption(&session, server, client);
 
         Self {
@@ -149,12 +126,7 @@ impl KeyCandidate {
         let tag: Tag<U12> = (*tag).into();
 
         self.cipher
-            .decrypt_in_place_detached(
-                &nonce(from_client, counter),
-                &[],
-                &mut plain,
-                &tag,
-            )
+            .decrypt_in_place_detached(&nonce(from_client, counter), &[], &mut plain, &tag)
             .map_err(|_| {
                 anyhow!(
                     "World AES-GCM verification failed: \
@@ -179,10 +151,7 @@ impl CryptoState {
             "World keys are already bound",
         );
 
-        ensure!(
-            !candidates.is_empty(),
-            "No World encryption candidates",
-        );
+        ensure!(!candidates.is_empty(), "No World encryption candidates",);
 
         self.candidates = candidates;
         Ok(())
@@ -200,16 +169,11 @@ impl CryptoState {
         data: &[u8],
     ) -> Result<(Bytes, Option<WorldSessionKey>)> {
         if let Some(selected) = &self.selected {
-            return Ok((
-                selected.decrypt(from_client, counter, tag, data)?,
-                None,
-            ));
+            return Ok((selected.decrypt(from_client, counter, tag, data)?, None));
         }
 
         for candidate in &self.candidates {
-            if let Ok(plain) =
-                candidate.decrypt(from_client, counter, tag, data)
-            {
+            if let Ok(plain) = candidate.decrypt(from_client, counter, tag, data) {
                 let selected = candidate.clone();
                 let session = selected.session;
 
@@ -241,11 +205,7 @@ impl CryptoState {
 
         let tag = selected
             .cipher
-            .encrypt_in_place_detached(
-                &nonce(from_client, counter),
-                &[],
-                &mut ciphertext,
-            )
+            .encrypt_in_place_detached(&nonce(from_client, counter), &[], &mut ciphertext)
             .map_err(|_| anyhow!("World AES-GCM encryption failed"))?;
 
         Ok((tag.into(), Bytes::from(ciphertext)))
@@ -266,11 +226,7 @@ mod tests {
         let server = std::array::from_fn(|index| index as u8);
         let client = std::array::from_fn(|index| (index + 32) as u8);
 
-        let session = derive_session(
-            &RealmJoinSecrets::from(raw),
-            &server,
-            &client,
-        );
+        let session = derive_session(&RealmJoinSecrets::from(raw), &server, &client);
 
         assert_eq!(
             hex(session.as_bytes()),
@@ -293,10 +249,7 @@ mod tests {
         let (tag, ciphertext) = crypto.encrypt(false, 5, &body).unwrap();
 
         assert_eq!(hex(&tag), "aebdc8eda26a726cc4d5bbd7");
-        assert_eq!(
-            hex(&ciphertext),
-            "45373fda7d7b30893a7da13da7037d109abe161d",
-        );
+        assert_eq!(hex(&ciphertext), "45373fda7d7b30893a7da13da7037d109abe161d",);
 
         assert_eq!(
             candidate.decrypt(false, 5, &tag, &ciphertext).unwrap(),
@@ -306,8 +259,6 @@ mod tests {
         let mut invalid = tag;
         invalid[0] ^= 1;
 
-        assert!(
-            candidate.decrypt(false, 5, &invalid, &ciphertext).is_err(),
-        );
+        assert!(candidate.decrypt(false, 5, &invalid, &ciphertext).is_err(),);
     }
 }

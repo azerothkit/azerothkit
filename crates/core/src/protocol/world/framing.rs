@@ -3,11 +3,9 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 use super::MAX_BODY_SIZE;
 
-const CLIENT_GREETING: &[u8] =
-    b"WORLD OF WARCRAFT CONNECTION - CLIENT TO SERVER - V2\n";
+const CLIENT_GREETING: &[u8] = b"WORLD OF WARCRAFT CONNECTION - CLIENT TO SERVER - V2\n";
 
-const SERVER_GREETING: &[u8] =
-    b"WORLD OF WARCRAFT CONNECTION - SERVER TO CLIENT - V2\n";
+const SERVER_GREETING: &[u8] = b"WORLD OF WARCRAFT CONNECTION - SERVER TO CLIENT - V2\n";
 
 pub(super) struct WireFrame {
     pub counter: u64,
@@ -59,8 +57,7 @@ impl FrameBuffer {
                 return Ok(None);
             }
 
-            let greeting =
-                self.buffer.split_to(self.greeting.len()).freeze();
+            let greeting = self.buffer.split_to(self.greeting.len()).freeze();
 
             self.greeted = true;
 
@@ -71,9 +68,7 @@ impl FrameBuffer {
             return Ok(None);
         }
 
-        let size = u32::from_le_bytes(
-            self.buffer[..4].try_into()?,
-        ) as usize;
+        let size = u32::from_le_bytes(self.buffer[..4].try_into()?) as usize;
 
         ensure!(
             (4..=MAX_BODY_SIZE).contains(&size),
@@ -116,10 +111,7 @@ impl FrameBuffer {
     }
 }
 
-pub(super) fn encode_frame(
-    tag: &[u8; 12],
-    body: &[u8],
-) -> Result<Bytes> {
+pub(super) fn encode_frame(tag: &[u8; 12], body: &[u8]) -> Result<Bytes> {
     ensure!(
         (4..=MAX_BODY_SIZE).contains(&body.len()),
         "Invalid outgoing World body size: {}",

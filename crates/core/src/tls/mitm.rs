@@ -192,8 +192,7 @@ impl TlsMitm {
         let downstream = match start.into_stream(config).await {
             Ok(stream) => stream,
             Err(error) => {
-                return Err(error)
-                    .context("Client TLS handshake failed");
+                return Err(error).context("Client TLS handshake failed");
             }
         };
 

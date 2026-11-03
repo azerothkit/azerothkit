@@ -1,6 +1,6 @@
 use bytes::Bytes;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Direction {
     ClientToServer,
     ServerToClient,

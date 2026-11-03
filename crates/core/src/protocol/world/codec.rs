@@ -8,8 +8,7 @@ use super::crypto::{CryptoState, KeyCandidate};
 use super::framing::{FrameBuffer, WireMessage, encode_frame};
 use super::handshake::{AuthRequest, Handshake};
 use super::packets::{
-    COMPRESSED, ENCRYPTED_ACK, MULTIPLE, WorldPacket,
-    bundle_messages, split_messages,
+    COMPRESSED, ENCRYPTED_ACK, MULTIPLE, WorldPacket, bundle_messages, split_messages,
 };
 
 pub enum WorldEvent {
@@ -41,10 +40,7 @@ pub struct WorldCodec {
 impl Default for WorldCodec {
     fn default() -> Self {
         Self {
-            buffers: [
-                FrameBuffer::new(false),
-                FrameBuffer::new(true),
-            ],
+            buffers: [FrameBuffer::new(false), FrameBuffer::new(true)],
             handshake: Handshake::default(),
             crypto: CryptoState::default(),
             inflater: Inflater::default(),
@@ -59,22 +55,14 @@ impl WorldCodec {
         self.buffers[usize::from(from_client)].push(data);
     }
 
-    pub fn bind_candidates(
-        &mut self,
-        candidates: Vec<KeyCandidate>,
-    ) -> Result<()> {
+    pub fn bind_candidates(&mut self, candidates: Vec<KeyCandidate>) -> Result<()> {
         self.crypto.bind(candidates)
     }
 
     /// Process one event at a time so authentication results can be
     /// applied before decoding subsequent frames from the same chunk.
-    pub fn next(
-        &mut self,
-        from_client: bool,
-    ) -> Result<Option<WorldEvent>> {
-        let Some(message) =
-            self.buffers[usize::from(from_client)].next()?
-        else {
+    pub fn next(&mut self, from_client: bool) -> Result<Option<WorldEvent>> {
+        let Some(message) = self.buffers[usize::from(from_client)].next()? else {
             return Ok(None);
         };
 
@@ -88,12 +76,8 @@ impl WorldCodec {
         let encrypted = self.handshake.encrypted();
 
         let (plain, verified_session) = if encrypted {
-            self.crypto.decrypt(
-                from_client,
-                frame.counter,
-                &frame.tag,
-                &frame.body,
-            )?
+            self.crypto
+                .decrypt(from_client, frame.counter, &frame.tag, &frame.body)?
         } else {
             ensure!(
                 frame.tag == [0u8; 12],
@@ -107,9 +91,7 @@ impl WorldCodec {
         let compressed = !from_client && root.opcode == COMPRESSED;
 
         if compressed {
-            root = WorldPacket::from_body(
-                self.inflater.decode(&root.payload)?,
-            )?;
+            root = WorldPacket::from_body(self.inflater.decode(&root.payload)?)?;
         }
 
         let auth = if encrypted {
@@ -158,9 +140,7 @@ impl WorldCodec {
     ) -> Result<Bytes> {
         let unchanged = packets == frame.packets.as_slice();
 
-        if unchanged
-            && (!frame.compressed || !self.compression_rewritten)
-        {
+        if unchanged && (!frame.compressed || !self.compression_rewritten) {
             return Ok(frame.wire.clone());
         }
 
@@ -184,16 +164,12 @@ impl WorldCodec {
                 opcode: COMPRESSED,
                 payload,
             }
-                .to_body()?
+            .to_body()?
         } else {
             body
         };
 
-        let (tag, ciphertext) = self.crypto.encrypt(
-            from_client,
-            frame.counter,
-            &body,
-        )?;
+        let (tag, ciphertext) = self.crypto.encrypt(from_client, frame.counter, &body)?;
 
         encode_frame(&tag, &ciphertext)
     }

@@ -14,19 +14,13 @@ impl CaptureFlowClosed {
 
 impl fmt::Display for CaptureFlowClosed {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            formatter,
-            "Capture TCP flow ended: {}",
-            self.operation,
-        )
+        write!(formatter, "Capture TCP flow ended: {}", self.operation,)
     }
 }
 
 impl std::error::Error for CaptureFlowClosed {}
 
-pub(crate) fn is_capture_flow_closed(
-    error: &anyhow::Error,
-) -> bool {
+pub(crate) fn is_capture_flow_closed(error: &anyhow::Error) -> bool {
     error.chain().any(|cause| {
         if cause.is::<CaptureFlowClosed>() {
             return true;
