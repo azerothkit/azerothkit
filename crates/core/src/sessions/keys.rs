@@ -34,3 +34,25 @@ impl fmt::Debug for RealmJoinSecrets {
         formatter.write_str("RealmJoinSecrets([REDACTED])")
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct WorldSessionKey([u8; 40]);
+
+impl WorldSessionKey {
+    pub const fn new(data: [u8; 40]) -> Self {
+        Self(data)
+    }
+
+    pub const fn as_bytes(&self) -> &[u8; 40] {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for WorldSessionKey {
+    fn fmt(
+        &self,
+        formatter: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        formatter.write_str("WorldSessionKey([REDACTED])")
+    }
+}

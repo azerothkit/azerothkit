@@ -3,6 +3,7 @@ mod factory;
 mod handler;
 mod passthrough;
 mod types;
+mod world;
 
 pub use types::{HandlerKind, Transport};
 

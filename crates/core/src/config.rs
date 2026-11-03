@@ -17,11 +17,18 @@ pub struct HandlerConfig {
 impl Default for HandlerConfig {
     fn default() -> Self {
         Self {
-            rules: vec![HandlerRule {
-                transport: Transport::Tcp,
-                port: 1119,
-                handler: HandlerKind::Bnet,
-            }],
+            rules: vec![
+                HandlerRule {
+                    transport: Transport::Tcp,
+                    port: 1119,
+                    handler: HandlerKind::Bnet,
+                },
+                HandlerRule {
+                    transport: Transport::Tcp,
+                    port: 3724,
+                    handler: HandlerKind::World,
+                },
+            ],
         }
     }
 }
@@ -30,8 +37,10 @@ impl HandlerConfig {
     pub(crate) fn validate(&self) -> Result<()> {
         for rule in &self.rules {
             ensure!(
-                rule.handler != HandlerKind::Bnet || rule.transport == Transport::Tcp,
-                "Battle.net handler requires TCP: port {}",
+                rule.handler == HandlerKind::Passthrough
+                    || rule.transport == Transport::Tcp,
+                "{:?} handler requires TCP: port {}",
+                rule.handler,
                 rule.port,
             );
         }

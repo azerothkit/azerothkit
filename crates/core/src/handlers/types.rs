@@ -23,6 +23,7 @@ pub enum HandlerKind {
     #[default]
     Passthrough,
     Bnet,
+    World,
 }
 
 /// For TCP, an ordered stream chunk.

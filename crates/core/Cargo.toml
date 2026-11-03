@@ -25,6 +25,11 @@ time = "0.3"
 tokio = { version = "1.54.1", features = ["rt", "sync", "io-util", "time", "net"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12", "logging"] }
 x509-parser = "0.18"
+aes-gcm = "0.10.3"
+hmac = "0.12.1"
+sha2 = "0.10.9"
+subtle = "2.6"
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 
 [build-dependencies]
 anyhow = "1.0.104"
