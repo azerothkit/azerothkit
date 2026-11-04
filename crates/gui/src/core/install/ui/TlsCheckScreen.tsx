@@ -3,7 +3,16 @@ import { InstallScreen } from './InstallScreen'
 
 const SHOW_DELAY_MS = 300
 
-export function TlsCheckScreen() {
+type TlsCheckScreenProps = {
+    title?: string
+    description?: string
+}
+
+export function TlsCheckScreen({
+    title = 'Checking TLS certificate',
+    description = 'Please wait while AzerothKit checks the certificate.',
+}: TlsCheckScreenProps) {
+    // Existing visible state, timer and cleanup remain here.
     const [visible, setVisible] = useState(false)
 
     useEffect(() => {
@@ -21,7 +30,7 @@ export function TlsCheckScreen() {
             <div
                 className="min-h-0 flex-1"
                 role="status"
-                aria-label="Checking TLS certificate"
+                aria-label={title}
                 aria-busy="true"
             />
         )
@@ -29,8 +38,8 @@ export function TlsCheckScreen() {
 
     return (
         <InstallScreen
-            title="Checking TLS certificate"
-            description="Please wait while AzerothKit checks the certificate."
+            title={title}
+            description={description}
         />
     )
 }

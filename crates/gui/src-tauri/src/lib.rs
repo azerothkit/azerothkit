@@ -20,6 +20,8 @@ fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::get_app_info,
             commands::install_tls_certificate,
             commands::get_tls_certificate_status,
+            commands::get_capture_setup_status,
+            commands::open_capture_settings,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

@@ -1,16 +1,19 @@
 import { Button } from '@/shared/ui'
 
+type ScreenAction = {
+    label: string
+    onClick: () => void
+    disabled?: boolean
+}
+
 type InstallScreenProps = {
     title: string
     description: string
-    action?: {
-        label: string
-        onClick: () => void
-        disabled?: boolean
-    }
+    action?: ScreenAction
+    secondaryAction?: ScreenAction
 }
 
-export function InstallScreen({ title, description, action }: InstallScreenProps) {
+export function InstallScreen({ title, description, action, secondaryAction }: InstallScreenProps) {
     return (
         <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-6">
             <div className="w-full max-w-sm space-y-6 text-center">
@@ -26,14 +29,29 @@ export function InstallScreen({ title, description, action }: InstallScreenProps
                     </p>
                 </div>
 
-                {action && (
-                    <Button
-                        type="button"
-                        disabled={action.disabled}
-                        onClick={action.onClick}
-                    >
-                        {action.label}
-                    </Button>
+                {(action || secondaryAction) && (
+                    <div className="flex flex-wrap justify-center gap-3">
+                        {action && (
+                            <Button
+                                type="button"
+                                disabled={action.disabled}
+                                onClick={action.onClick}
+                            >
+                                {action.label}
+                            </Button>
+                        )}
+
+                        {secondaryAction && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={secondaryAction.disabled}
+                                onClick={secondaryAction.onClick}
+                            >
+                                {secondaryAction.label}
+                            </Button>
+                        )}
+                    </div>
                 )}
             </div>
         </main>

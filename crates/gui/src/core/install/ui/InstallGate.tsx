@@ -4,10 +4,17 @@ import { tlsCertificateStatusQuery } from '../queries'
 import { useInstallTlsCertificate } from '../mutations'
 import { InstallScreen } from './InstallScreen'
 import { TlsCheckScreen } from './TlsCheckScreen'
+import { captureSetupQuery } from '../queries'
+import { CaptureSetupScreen } from './CaptureSetupScreen'
 
 export function InstallGate({ children }: PropsWithChildren) {
     const tlsStatus = useQuery(tlsCertificateStatusQuery)
     const installation = useInstallTlsCertificate()
+
+    const captureStatus = useQuery({
+        ...captureSetupQuery,
+        enabled: tlsStatus.isSuccess && tlsStatus.data,
+    })
 
     // Keep this screen mounted while installation and revalidation run.
     if (installation.isPending) {
@@ -44,6 +51,42 @@ export function InstallGate({ children }: PropsWithChildren) {
     }
 
     if (tlsStatus.data) {
+        if (captureStatus.isPending) {
+            return (
+                <TlsCheckScreen
+                    title="Checking network capture"
+                    description="Please wait while AzerothKit checks the capture component."
+                />
+            )
+        }
+
+        if (captureStatus.isError) {
+            return (
+                <InstallScreen
+                    title="Could not check network capture"
+                    description={errorMessage(captureStatus.error)}
+                    action={{
+                        label: 'Try again',
+                        onClick: () => {
+                            void captureStatus.refetch()
+                        },
+                    }}
+                />
+            )
+        }
+
+        if (!captureStatus.data.ready) {
+            return (
+                <CaptureSetupScreen
+                    setup={captureStatus.data}
+                    checking={captureStatus.isFetching}
+                    onRetry={() => {
+                        void captureStatus.refetch()
+                    }}
+                />
+            )
+        }
+
         return <>{children}</>
     }
 

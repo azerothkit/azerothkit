@@ -134,3 +134,27 @@ pub async fn get_tls_certificate_status() -> Result<bool, String> {
         })?
         .map_err(|error| format!("{error:#}"))
 }
+
+use azerothkit_core::install::CaptureSetupStatus;
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_capture_setup_status()
+    -> Result<CaptureSetupStatus, String>
+{
+    tauri::async_runtime::spawn_blocking(
+        azerothkit_core::install::get_capture_setup_status,
+    )
+    .await
+    .map_err(|error| {
+        format!("Capture setup check task failed: {error}")
+    })?
+    .map_err(|error| format!("{error:#}"))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_capture_settings() -> Result<(), String> {
+    azerothkit_core::install::open_capture_settings()
+        .map_err(|error| format!("{error:#}"))
+}

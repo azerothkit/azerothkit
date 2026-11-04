@@ -14,6 +14,8 @@ export const commands = {
 	getAppInfo: () => __TAURI_INVOKE<AppInfo>("get_app_info"),
 	installTlsCertificate: () => typedError<boolean, string>(__TAURI_INVOKE("install_tls_certificate")),
 	getTlsCertificateStatus: () => typedError<boolean, string>(__TAURI_INVOKE("get_tls_certificate_status")),
+	getCaptureSetupStatus: () => typedError<CaptureSetupStatus, string>(__TAURI_INVOKE("get_capture_setup_status")),
+	openCaptureSettings: () => typedError<null, string>(__TAURI_INVOKE("open_capture_settings")),
 };
 
 /* Types */
@@ -33,6 +35,13 @@ export type AppSettings_Deserialize = {
 export type AppSettings_Serialize = {
 	selectedClient: ClientId,
 	settingsByClient: Partial<{ [key in ClientId]: ClientSettings_Serialize }>,
+};
+
+export type CapturePlatform = "macos" | "windows" | "linux" | "other";
+
+export type CaptureSetupStatus = {
+	platform: CapturePlatform,
+	ready: boolean,
 };
 
 export type ClientCapabilities = ClientCapabilities_Serialize | ClientCapabilities_Deserialize;

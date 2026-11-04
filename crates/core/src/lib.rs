@@ -17,3 +17,4 @@ mod constants;
 pub mod settings;
 pub mod clients;
 pub mod lifecycle;
+pub mod install;

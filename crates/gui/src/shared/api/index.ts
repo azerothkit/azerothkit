@@ -15,4 +15,6 @@ export type {
     TimeOverrideCapabilities,
     ClientId,
     DurationUnit,
+    CaptureSetupStatus,
+    CapturePlatform,
 } from './rust/bindings'
