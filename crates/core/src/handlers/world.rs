@@ -22,13 +22,14 @@ impl WorldHandler {
     pub(super) fn new(
         connection_id: u64,
         sessions: Arc<SessionStore>,
+        codec: WorldCodec,
         features: WorldPipeline,
         lifecycle: WorldLifecycle,
     ) -> Self {
         Self {
             connection_id,
             sessions,
-            codec: WorldCodec::default(),
+            codec,
             features,
             lifecycle,
             encryption_announced: false,

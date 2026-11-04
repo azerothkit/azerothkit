@@ -3,9 +3,7 @@ use anyhow::{Context, Result, ensure};
 use crate::sessions::{RealmJoinSecrets, WorldSessionKey};
 
 use super::crypto::{KeyCandidate, derive_session, verify_continued};
-use super::packets::{
-    AUTH_CHALLENGE, AUTH_CONTINUED, AUTH_SESSION, ENCRYPTED_ACK, ENTER_ENCRYPTED, WorldPacket,
-};
+use super::{WorldOpcodes, WorldPacket};
 
 pub enum AuthRequest {
     Initial {
@@ -61,8 +59,8 @@ impl AuthRequest {
     }
 }
 
-#[derive(Default)]
 pub(super) struct Handshake {
+    opcodes: WorldOpcodes,
     server: Option<[u8; 32]>,
     auth_seen: bool,
     armed: bool,
@@ -70,6 +68,16 @@ pub(super) struct Handshake {
 }
 
 impl Handshake {
+    pub fn new(opcodes: WorldOpcodes) -> Self {
+        Self {
+            opcodes,
+            server: None,
+            auth_seen: false,
+            armed: false,
+            encrypted: false,
+        }
+    }
+
     pub fn encrypted(&self) -> bool {
         self.encrypted
     }
@@ -82,7 +90,7 @@ impl Handshake {
         let payload = &packet.payload;
 
         match (from_client, packet.opcode) {
-            (false, AUTH_CHALLENGE) => {
+            (false, opcode) if opcode == self.opcodes.auth_challenge => {
                 ensure!(
                     payload.len() == 65,
                     "Unsupported World AuthChallenge size: {}",
@@ -97,35 +105,54 @@ impl Handshake {
                 self.server = Some(payload[32..64].try_into()?);
             }
 
-            (true, AUTH_SESSION | AUTH_CONTINUED) => {
-                ensure!(!self.auth_seen, "Duplicate World authentication");
+            (true, opcode)
+            if opcode == self.opcodes.auth_session
+                || opcode == self.opcodes.auth_continued =>
+                {
+                    ensure!(
+                    !self.auth_seen,
+                    "Duplicate World authentication",
+                );
 
-                let server = self.server.context("World AuthChallenge is missing")?;
+                    let server = self.server
+                        .context("World AuthChallenge is missing")?;
 
-                let request = if packet.opcode == AUTH_SESSION {
-                    ensure!(payload.len() >= 76, "Short World AuthSession",);
+                    let request =
+                        if packet.opcode == self.opcodes.auth_session {
+                            ensure!(
+                            payload.len() >= 76,
+                            "Short World AuthSession",
+                        );
 
-                    AuthRequest::Initial {
-                        server,
-                        client: payload[20..52].try_into()?,
-                    }
-                } else {
-                    ensure!(payload.len() >= 72, "Short World AuthContinuedSession",);
+                            AuthRequest::Initial {
+                                server,
+                                client: payload[20..52].try_into()?,
+                            }
+                        } else {
+                            ensure!(
+                            payload.len() >= 72,
+                            "Short World AuthContinuedSession",
+                        );
 
-                    AuthRequest::Continued {
-                        server,
-                        client: payload[8..40].try_into()?,
-                        proof: payload[40..64].try_into()?,
-                        connection_key: payload[64..72].try_into()?,
-                    }
-                };
+                            AuthRequest::Continued {
+                                server,
+                                client: payload[8..40].try_into()?,
+                                proof: payload[40..64].try_into()?,
+                                connection_key: payload[64..72].try_into()?,
+                            }
+                        };
 
-                self.auth_seen = true;
-                return Ok(Some(request));
-            }
+                    self.auth_seen = true;
 
-            (false, ENTER_ENCRYPTED) => {
-                ensure!(self.auth_seen, "World authentication is missing");
+                    return Ok(Some(request));
+                }
+
+            (false, opcode) if opcode == self.opcodes.enter_encrypted => {
+                ensure!(
+                    self.auth_seen,
+                    "World authentication is missing",
+                );
+
                 ensure!(
                     payload.len() == 69,
                     "Unsupported EnterEncryptedMode size: {}",
@@ -135,7 +162,7 @@ impl Handshake {
                 self.armed = payload[68] & 0x80 != 0;
             }
 
-            (true, ENCRYPTED_ACK) => {
+            (true, opcode) if opcode == self.opcodes.encrypted_ack => {
                 ensure!(
                     self.armed,
                     "World encryption ACK without EnterEncryptedMode",

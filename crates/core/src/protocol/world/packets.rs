@@ -1,21 +1,7 @@
 use anyhow::{Result, ensure};
 use bytes::{BufMut, Bytes, BytesMut};
 
-use super::MAX_BODY_SIZE;
-
-pub const AUTH_SESSION: u32 = 0x440001;
-pub const AUTH_CONTINUED: u32 = 0x440003;
-pub const ENCRYPTED_ACK: u32 = 0x440005;
-
-pub const AUTH_CHALLENGE: u32 = 0x4c0000;
-pub const ENTER_ENCRYPTED: u32 = 0x4c0004;
-pub const MULTIPLE: u32 = 0x4c000d;
-pub const COMPRESSED: u32 = 0x4c000e;
-
-pub const LOGIN_TIME: u32 = 0x4501b8;
-pub const GAME_TIME_SET: u32 = 0x4501b7;
-pub const GAME_TIME_UPDATE: u32 = 0x4501b6;
-pub const PRINT_NOTIFICATION: u32 = 0x45006e;
+use super::{MAX_BODY_SIZE, WorldProtocol};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorldPacket {
@@ -46,6 +32,20 @@ impl From<u32> for PackedTime {
     }
 }
 
+impl PackedTime {
+    pub fn with_clock(self, hour: u8, minute: u8) -> Result<Self> {
+        ensure!(hour < 24, "Hour must be between 0 and 23");
+        ensure!(minute < 60, "Minute must be between 0 and 59");
+
+        let raw =
+            (self.raw & !0x7ff)
+                | (u32::from(hour) << 6)
+                | u32::from(minute);
+
+        Ok(raw.into())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum KnownPacket {
     LoginTime {
@@ -65,62 +65,6 @@ pub enum KnownPacket {
     Unknown,
 }
 
-impl PackedTime {
-    pub fn with_clock(self, hour: u8, minute: u8) -> Result<Self> {
-        ensure!(hour < 24, "Hour must be between 0 and 23");
-        ensure!(minute < 60, "Minute must be between 0 and 59");
-
-        let raw = (self.raw & !0x7ff) | (u32::from(hour) << 6) | u32::from(minute);
-
-        Ok(raw.into())
-    }
-}
-
-impl WorldPacket {
-    pub fn set_time_fields(
-        &mut self,
-        server: PackedTime,
-        game: PackedTime,
-        speed: Option<f32>,
-    ) -> Result<()> {
-        let expected = match self.opcode {
-            LOGIN_TIME => 20,
-            GAME_TIME_SET | GAME_TIME_UPDATE => 16,
-            _ => anyhow::bail!("Packet does not contain World time fields"),
-        };
-
-        ensure!(
-            self.payload.len() == expected,
-            "Invalid World time payload size: {}",
-            self.payload.len(),
-        );
-
-        if let Some(speed) = speed {
-            ensure!(
-                self.opcode == LOGIN_TIME,
-                "This World time packet has no speed field",
-            );
-
-            ensure!(
-                speed.is_finite() && speed >= 0.0,
-                "Invalid World time speed",
-            );
-        }
-
-        let mut payload = self.payload.to_vec();
-
-        payload[0..4].copy_from_slice(&server.raw.to_le_bytes());
-        payload[4..8].copy_from_slice(&game.raw.to_le_bytes());
-
-        if let Some(speed) = speed {
-            payload[8..12].copy_from_slice(&speed.to_le_bytes());
-        }
-
-        self.payload = Bytes::from(payload);
-        Ok(())
-    }
-}
-
 impl WorldPacket {
     pub fn from_body(body: Bytes) -> Result<Self> {
         ensure!(body.len() >= 4, "Short World packet body");
@@ -138,73 +82,64 @@ impl WorldPacket {
         );
 
         let mut body = BytesMut::with_capacity(4 + self.payload.len());
+
         body.put_u32_le(self.opcode);
         body.extend_from_slice(&self.payload);
 
         Ok(body.freeze())
     }
 
-    pub fn decode_known(&self) -> Result<KnownPacket> {
-        let data = &self.payload;
+    pub fn decode_known(
+        &self,
+        protocol: &WorldProtocol,
+    ) -> Result<KnownPacket> {
+        protocol.messages.decode(self, &protocol.opcodes)
+    }
 
-        match self.opcode {
-            LOGIN_TIME => {
-                ensure!(
-                    data.len() == 20,
-                    "Invalid LOGIN_SET_TIME_SPEED size: {}",
-                    data.len(),
-                );
-
-                Ok(KnownPacket::LoginTime {
-                    server: u32::from_le_bytes(data[0..4].try_into()?).into(),
-                    game: u32::from_le_bytes(data[4..8].try_into()?).into(),
-                    speed: f32::from_le_bytes(data[8..12].try_into()?),
-                    server_holiday_offset: i32::from_le_bytes(data[12..16].try_into()?),
-                    game_holiday_offset: i32::from_le_bytes(data[16..20].try_into()?),
-                })
-            }
-
-            GAME_TIME_SET | GAME_TIME_UPDATE => {
-                ensure!(data.len() == 16, "Invalid GAME_TIME size: {}", data.len(),);
-
-                Ok(KnownPacket::GameTime {
-                    server: u32::from_le_bytes(data[0..4].try_into()?).into(),
-                    game: u32::from_le_bytes(data[4..8].try_into()?).into(),
-                    server_holiday_offset: i32::from_le_bytes(data[8..12].try_into()?),
-                    game_holiday_offset: i32::from_le_bytes(data[12..16].try_into()?),
-                })
-            }
-
-            PRINT_NOTIFICATION => {
-                ensure!(data.len() >= 2, "Short notification");
-
-                let length = usize::from(u16::from_be_bytes(data[..2].try_into()?) >> 4);
-
-                ensure!(data.len() == length + 2, "Invalid notification length",);
-
-                Ok(KnownPacket::Notification(
-                    String::from_utf8_lossy(&data[2..]).into_owned(),
-                ))
-            }
-
-            _ => Ok(KnownPacket::Unknown),
-        }
+    pub fn set_time_fields(
+        &mut self,
+        protocol: &WorldProtocol,
+        server: PackedTime,
+        game: PackedTime,
+        speed: Option<f32>,
+    ) -> Result<()> {
+        protocol.messages.set_time(
+            self,
+            &protocol.opcodes,
+            server,
+            game,
+            speed,
+        )
     }
 }
 
-pub(super) fn split_messages(packet: WorldPacket) -> Result<Vec<WorldPacket>> {
+pub(super) fn split_messages(
+    packet: WorldPacket,
+    multiple: u32,
+) -> Result<Vec<WorldPacket>> {
     let mut output = Vec::new();
-    split(packet, 0, &mut output)?;
+
+    split(packet, multiple, 0, &mut output)?;
+
     Ok(output)
 }
 
-fn split(packet: WorldPacket, depth: usize, output: &mut Vec<WorldPacket>) -> Result<()> {
+fn split(
+    packet: WorldPacket,
+    multiple: u32,
+    depth: usize,
+    output: &mut Vec<WorldPacket>,
+) -> Result<()> {
     ensure!(depth <= 8, "Too many nested World MULTIPLE packets");
 
-    if packet.opcode != MULTIPLE {
-        ensure!(output.len() < 65_536, "Too many messages in a World frame",);
+    if packet.opcode != multiple {
+        ensure!(
+            output.len() < 65_536,
+            "Too many messages in a World frame",
+        );
 
         output.push(packet);
+
         return Ok(());
     }
 
@@ -220,7 +155,9 @@ fn split(packet: WorldPacket, depth: usize, output: &mut Vec<WorldPacket>) -> Re
             packet.payload[offset..offset + 2].try_into()?,
         ));
 
-        let opcode = u32::from_le_bytes(packet.payload[offset + 2..offset + 6].try_into()?);
+        let opcode = u32::from_le_bytes(
+            packet.payload[offset + 2..offset + 6].try_into()?,
+        );
 
         offset += 6;
 
@@ -234,6 +171,7 @@ fn split(packet: WorldPacket, depth: usize, output: &mut Vec<WorldPacket>) -> Re
                 opcode,
                 payload: packet.payload.slice(offset..offset + size),
             },
+            multiple,
             depth + 1,
             output,
         )?;
@@ -244,10 +182,14 @@ fn split(packet: WorldPacket, depth: usize, output: &mut Vec<WorldPacket>) -> Re
     Ok(())
 }
 
-pub(super) fn bundle_messages(packets: &[WorldPacket], force_multiple: bool) -> Result<Bytes> {
+pub(super) fn bundle_messages(
+    packets: &[WorldPacket],
+    force_multiple: bool,
+    multiple: u32,
+) -> Result<Bytes> {
     ensure!(
         !packets.is_empty(),
-        "World frame cannot contain zero messages"
+        "World frame cannot contain zero messages",
     );
 
     if packets.len() == 1 && !force_multiple {
@@ -255,7 +197,8 @@ pub(super) fn bundle_messages(packets: &[WorldPacket], force_multiple: bool) -> 
     }
 
     let mut output = BytesMut::new();
-    output.put_u32_le(MULTIPLE);
+
+    output.put_u32_le(multiple);
 
     for packet in packets {
         let size = u16::try_from(packet.payload.len())?;

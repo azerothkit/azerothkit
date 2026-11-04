@@ -1,5 +1,7 @@
 use anyhow::{Result, ensure};
 
+use crate::clients::ClientId;
+
 pub use crate::handlers::{HandlerKind, Transport};
 
 #[derive(Debug, Clone)]
@@ -16,28 +18,37 @@ pub struct HandlerConfig {
 
 impl Default for HandlerConfig {
     fn default() -> Self {
-        Self {
-            rules: vec![
-                HandlerRule {
-                    transport: Transport::Tcp,
-                    port: 1119,
-                    handler: HandlerKind::Bnet,
-                },
-                HandlerRule {
-                    transport: Transport::Tcp,
-                    port: 3724,
-                    handler: HandlerKind::World,
-                },
-            ],
-        }
+        Self::for_client(ClientId::Retail)
     }
 }
 
 impl HandlerConfig {
+    pub fn for_client(client: ClientId) -> Self {
+        let profile = client.profile();
+
+        let rules = profile.bnet_ports.iter()
+            .map(|&port| HandlerRule {
+                transport: Transport::Tcp,
+                port,
+                handler: HandlerKind::Bnet,
+            })
+            .chain(
+                profile.world_ports.iter().map(|&port| HandlerRule {
+                    transport: Transport::Tcp,
+                    port,
+                    handler: HandlerKind::World,
+                }),
+            )
+            .collect();
+
+        Self { rules }
+    }
+
     pub(crate) fn validate(&self) -> Result<()> {
         for rule in &self.rules {
             ensure!(
-                rule.handler == HandlerKind::Passthrough || rule.transport == Transport::Tcp,
+                rule.handler == HandlerKind::Passthrough
+                    || rule.transport == Transport::Tcp,
                 "{:?} handler requires TCP: port {}",
                 rule.handler,
                 rule.port,
@@ -49,11 +60,16 @@ impl HandlerConfig {
 
     /// Later rules override earlier rules.
     /// Unmatched connections use passthrough.
-    pub(crate) fn select(&self, transport: Transport, port: u16) -> HandlerKind {
-        self.rules
-            .iter()
+    pub(crate) fn select(
+        &self,
+        transport: Transport,
+        port: u16,
+    ) -> HandlerKind {
+        self.rules.iter()
             .rev()
-            .find(|rule| rule.transport == transport && rule.port == port)
+            .find(|rule| {
+                rule.transport == transport && rule.port == port
+            })
             .map(|rule| rule.handler)
             .unwrap_or_default()
     }

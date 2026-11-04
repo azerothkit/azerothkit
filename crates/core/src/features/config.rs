@@ -2,6 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use anyhow::{Context, Result, ensure};
+use crate::clients::{ClientId, TimeOverrideCapabilities};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TimeOfDay {
@@ -93,6 +94,34 @@ impl WorldTimeConfig {
 
         Ok(Some(speed))
     }
+
+    pub fn supported(
+        &self,
+        capabilities: TimeOverrideCapabilities,
+    ) -> Option<Self> {
+        let mut config = self.clone();
+
+        if !capabilities.day_length {
+            config.day_minutes = None;
+        }
+
+        config.pin_on_sync &= capabilities.reset_on_server_sync;
+
+        // The target clock can be needed for synchronization even when
+        // setting the clock on login is unsupported.
+        if !capabilities.entry_time && !config.pin_on_sync {
+            config.start_time = None;
+        }
+
+        if config.day_minutes.is_none()
+            && config.start_time.is_none()
+            && !config.pin_on_sync
+        {
+            None
+        } else {
+            Some(config)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -107,5 +136,16 @@ impl FeatureConfig {
         }
 
         Ok(())
+    }
+
+    pub fn for_client(&self, client: ClientId) -> Self {
+        Self {
+            world_time: self.world_time.as_ref().and_then(|config| {
+                client.capabilities().time_override
+                    .and_then(|capabilities| {
+                        config.supported(capabilities)
+                    })
+            }),
+        }
     }
 }

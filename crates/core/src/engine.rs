@@ -6,6 +6,8 @@ use tokio::sync::{oneshot, watch};
 
 use crate::lifecycle::{EnginePhase, Lifecycle};
 use tokio::task::{JoinHandle, JoinSet};
+use crate::clients::ClientId;
+use crate::constants::DEFAULT_PROCESS_NAME;
 
 use crate::capture::{Capture, CaptureConfig, CapturedTransport, is_capture_flow_closed};
 use crate::config::{HandlerConfig, HandlerKind, Transport};
@@ -17,6 +19,7 @@ use crate::tls::{TlsConfig, TlsMitm, UncleanTlsClose};
 
 #[derive(Debug, Clone)]
 pub struct EngineConfig {
+    pub client: ClientId,
     pub capture: CaptureConfig,
     pub tls: Option<TlsConfig>,
     pub handlers: HandlerConfig,
@@ -27,6 +30,15 @@ impl EngineConfig {
     fn validate(&self) -> Result<()> {
         self.handlers.validate()?;
         self.features.validate()?;
+
+        let protocol = self.client.profile().world.with_context(|| {
+            format!(
+                "World protocol is not configured for {:?}",
+                self.client,
+            )
+        })?;
+
+        protocol.opcodes.validate()?;
 
         let world_enabled = self.handlers.rules.iter().any(|rule| {
             rule.transport == Transport::Tcp
@@ -56,6 +68,19 @@ impl EngineConfig {
         }
 
         Ok(())
+    }
+
+    pub fn for_client(client: ClientId) -> Self {
+        Self {
+            client,
+            capture: CaptureConfig {
+                filter: DEFAULT_PROCESS_NAME.to_owned(),
+                helper_executable: None,
+            },
+            tls: Some(TlsConfig::for_client(client)),
+            handlers: HandlerConfig::for_client(client),
+            features: FeatureConfig::default(),
+        }
     }
 }
 
@@ -101,10 +126,14 @@ impl Drop for EngineHandle {
     }
 }
 
-pub(crate) async fn start(config: EngineConfig) -> Result<EngineHandle> {
+pub(crate) async fn start(
+    mut config: EngineConfig,
+) -> Result<EngineHandle> {
+    config.features = config.features.for_client(config.client);
     config.validate()?;
 
     let EngineConfig {
+        client,
         capture: capture_config,
         tls: tls_config,
         handlers,
@@ -114,7 +143,13 @@ pub(crate) async fn start(config: EngineConfig) -> Result<EngineHandle> {
     let (lifecycle, phase) = Lifecycle::new();
 
     let sessions = Arc::new(SessionStore::default());
-    let factory = HandlerFactory::new(sessions, features, lifecycle);
+
+    let factory = HandlerFactory::new(
+        client,
+        sessions,
+        features,
+        lifecycle,
+    )?;
 
     let tls = tls_config.map(TlsMitm::load).transpose()?.map(Arc::new);
 

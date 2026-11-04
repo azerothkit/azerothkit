@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
+use crate::clients::TimeOverrideCapabilities;
 use crate::handlers::Direction;
-use crate::protocol::world::WorldPacket;
+use crate::protocol::world::{WorldPacket, WorldProtocol};
 
 use super::FeatureConfig;
 use super::world_time::WorldTimeFeature;
@@ -11,7 +12,7 @@ use super::world_time::WorldTimeFeature;
 pub(super) trait WorldFeature: Send {
     fn direction(&self) -> Direction;
 
-    fn opcodes(&self) -> &'static [u32];
+    fn opcodes(&self) -> &[u32];
 
     fn apply(&mut self, packet: &mut WorldPacket) -> Result<()>;
 }
@@ -22,7 +23,11 @@ pub(crate) struct WorldPipeline {
 }
 
 impl WorldPipeline {
-    pub(crate) fn new(config: &FeatureConfig) -> Result<Self> {
+    pub(crate) fn new(
+        config: &FeatureConfig,
+        protocol: WorldProtocol,
+        time_capabilities: Option<TimeOverrideCapabilities>,
+    ) -> Result<Self> {
         config.validate()?;
 
         let mut pipeline = Self {
@@ -32,7 +37,13 @@ impl WorldPipeline {
 
         // Registration order defines execution order for shared opcodes.
         if let Some(settings) = &config.world_time {
-            pipeline.register(Box::new(WorldTimeFeature::new(settings.clone())?));
+            if let Some(capabilities) = time_capabilities {
+                pipeline.register(Box::new(WorldTimeFeature::new(
+                    settings.clone(),
+                    protocol,
+                    capabilities,
+                )?));
+            }
         }
 
         Ok(pipeline)
@@ -43,7 +54,9 @@ impl WorldPipeline {
         let direction = feature.direction();
 
         for &opcode in feature.opcodes() {
-            let route = self.routes.entry((direction, opcode)).or_default();
+            let route = self.routes
+                .entry((direction, opcode))
+                .or_default();
 
             if !route.contains(&index) {
                 route.push(index);
@@ -59,9 +72,9 @@ impl WorldPipeline {
         packets: &[WorldPacket],
     ) -> Result<Option<Vec<WorldPacket>>> {
         if self.routes.is_empty()
-            || !packets
-                .iter()
-                .any(|packet| self.routes.contains_key(&(direction, packet.opcode)))
+            || !packets.iter().any(|packet| {
+            self.routes.contains_key(&(direction, packet.opcode))
+        })
         {
             return Ok(None);
         }
@@ -70,7 +83,9 @@ impl WorldPipeline {
 
         for packet in &mut output {
             // Route by the original opcode; do not recursively redispatch.
-            let Some(indices) = self.routes.get(&(direction, packet.opcode)) else {
+            let Some(indices) =
+                self.routes.get(&(direction, packet.opcode))
+            else {
                 continue;
             };
 
