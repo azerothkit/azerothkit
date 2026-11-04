@@ -12,6 +12,8 @@ export const commands = {
 	saveClientSettings: (clientId: ClientId, settings: ClientSettings_Deserialize) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("save_client_settings", { clientId, settings })),
 	setSelectedClient: (clientId: ClientId) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("set_selected_client", { clientId })),
 	getAppInfo: () => __TAURI_INVOKE<AppInfo>("get_app_info"),
+	installTlsCertificate: () => typedError<boolean, string>(__TAURI_INVOKE("install_tls_certificate")),
+	getTlsCertificateStatus: () => typedError<boolean, string>(__TAURI_INVOKE("get_tls_certificate_status")),
 };
 
 /* Types */
@@ -101,11 +103,8 @@ export type SettingsSnapshot_Serialize = {
 };
 
 export type TimeOverrideCapabilities = {
-	/**  Setting the time upon entering the game world. */
 	entryTime: boolean,
-	/**  Reset to a specified time during server synchronization. */
 	resetOnServerSync: boolean,
-	/**  Adjusting the duration of an in-game day. */
 	dayLength: boolean,
 };
 

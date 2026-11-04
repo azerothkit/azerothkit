@@ -16,14 +16,10 @@ export const MainLayout = () => {
 
     return (
         <>
-            <div
-                data-tauri-drag-region
-                className="fixed inset-x-0 top-0 h-8 left-0 right-0 z-50"
-            />
-            <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground pt-3.5">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <header className="shrink-0 border-b">
-                    <div className="mx-auto w-full max-w-xl px-6 pt-5 pb-4 select-none">
-                        <div className="mb-5 flex items-center justify-between gap-4">
+                    <div className="mx-auto w-full max-w-xl px-6 pt-5 pb-3 select-none">
+                        <div className="mb-3 flex items-center justify-between gap-4">
                             <span className="text-sm font-semibold tracking-tight">
                                 {appInfo?.name}
                             </span>

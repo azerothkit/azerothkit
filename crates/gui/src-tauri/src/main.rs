@@ -2,5 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    azerothkit_gui_lib::run()
+    if let Some(code) =
+        azerothkit_core::tls::handle_ca_install_request()
+    {
+        std::process::exit(code);
+    }
+
+    azerothkit_gui_lib::run();
 }

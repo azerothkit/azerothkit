@@ -6,6 +6,7 @@ import { queryClient } from '@/core/query'
 import { Toaster } from '@/shared/ui'
 import { EngineProvider } from '@/core/engine'
 import { connectLogs } from '@/core/logs'
+import { InstallGate } from '@/core/install'
 
 type BootstrapState =
     | { status: 'pending' }
@@ -44,7 +45,9 @@ export function Bootstrap({ children }: PropsWithChildren) {
         <>
             <QueryClientProvider client={queryClient}>
                 <Toaster>
-                    <EngineProvider>{children}</EngineProvider>
+                    <InstallGate>
+                        <EngineProvider>{children}</EngineProvider>
+                    </InstallGate>
                 </Toaster>
             </QueryClientProvider>
         </>

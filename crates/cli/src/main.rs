@@ -8,6 +8,7 @@ use azerothkit_core::{
     features::{TimeOfDay, WorldTimeConfig},
     tls::TlsConfig,
 };
+use azerothkit_core::clients::ClientId;
 
 const HELP: &str = "\
 Usage:
@@ -100,6 +101,7 @@ async fn main() -> Result<()> {
         tls: tls_enabled.then(TlsConfig::default),
         handlers: Default::default(),
         features: Default::default(),
+        client: ClientId::Retail
     };
 
     if day_minutes.is_some() || start_time.is_some() || pin_on_sync {

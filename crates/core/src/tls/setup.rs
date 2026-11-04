@@ -17,8 +17,8 @@ pub fn installation_instructions(certificate: &Path) -> String {
         let path = certificate.to_string_lossy().replace('\'', "''");
 
         format!(
-            "Windows PowerShell, current user:\n\
-             certutil -user -addstore Root '{path}'"
+            "Windows PowerShell, run as administrator:\n\
+         certutil -addstore Root '{path}'"
         )
     }
 

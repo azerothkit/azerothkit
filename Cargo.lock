@@ -381,6 +381,7 @@ dependencies = [
  "directories",
  "flate2",
  "hmac",
+ "libc",
  "log",
  "mitmproxy",
  "pem",
@@ -389,6 +390,7 @@ dependencies = [
  "prost-types",
  "rcgen",
  "rustls-native-certs",
+ "security-framework",
  "serde",
  "serde_json",
  "sha2",
@@ -398,6 +400,7 @@ dependencies = [
  "time",
  "tokio",
  "tokio-rustls",
+ "windows",
  "x509-parser",
 ]
 

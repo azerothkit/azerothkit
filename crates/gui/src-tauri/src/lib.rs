@@ -18,6 +18,8 @@ fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::save_client_settings,
             commands::set_selected_client,
             commands::get_app_info,
+            commands::install_tls_certificate,
+            commands::get_tls_certificate_status,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use azerothkit_core::{
-    clients::{ClientDescriptor, ClientId, available_clients},
-    settings::{AppSettings, ClientSettings, SettingsStore},
-};
+use azerothkit_core::{clients::{ClientDescriptor, ClientId, available_clients}, settings::{AppSettings, ClientSettings, SettingsStore}, tls};
 use serde::Serialize;
 use tauri::{AppHandle, State};
 
@@ -110,4 +107,30 @@ pub fn get_app_info(app: AppHandle, paths: State<'_, AppPaths>) -> AppInfo {
         version: package.version.to_string(),
         logs_dir: paths.logs_dir().to_string_lossy().into_owned(),
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn install_tls_certificate() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(
+        tls::install_ca,
+    )
+        .await
+        .map_err(|error| {
+            format!("CA installation task failed: {error}")
+        })?
+        .map_err(|error| format!("{error:#}"))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_tls_certificate_status() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(
+        azerothkit_core::tls::is_ca_installed,
+    )
+        .await
+        .map_err(|error| {
+            format!("CA status task failed: {error}")
+        })?
+        .map_err(|error| format!("{error:#}"))
 }
