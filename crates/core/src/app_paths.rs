@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
-use crate::constant::APP_NAME;
+use crate::constants::APP_NAME;
 
 #[derive(Debug, Clone)]
 pub struct AppPaths {

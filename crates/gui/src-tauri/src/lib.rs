@@ -63,10 +63,14 @@ pub fn run() {
             builder.mount_events(app);
 
             let store = SettingsStore::open(&paths)?;
+            let engine = engine::EngineState::new(
+                app.handle().clone(),
+                paths.clone(),
+            );
 
             app.manage(paths);
             app.manage(Arc::new(store));
-            app.manage(engine::EngineState::default());
+            app.manage(engine);
 
             Ok(())
         })

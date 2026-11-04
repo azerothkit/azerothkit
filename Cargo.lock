@@ -405,6 +405,7 @@ dependencies = [
 name = "azerothkit-gui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "azerothkit-core",
  "log",
  "serde",

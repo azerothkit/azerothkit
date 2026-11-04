@@ -26,28 +26,25 @@ pub fn get_engine_snapshot(engine: State<'_, EngineState>) -> Result<EngineSnaps
 #[tauri::command]
 #[specta::specta]
 pub async fn start_engine(
-    app: AppHandle,
     engine: State<'_, EngineState>,
 ) -> Result<EngineSnapshot, String> {
-    engine.start(&app).await
+    engine.start().await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn stop_engine(
-    app: AppHandle,
     engine: State<'_, EngineState>,
 ) -> Result<EngineSnapshot, String> {
-    engine.stop(&app).await
+    engine.stop().await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn restart_engine(
-    app: AppHandle,
     engine: State<'_, EngineState>,
 ) -> Result<EngineSnapshot, String> {
-    engine.restart(&app).await
+    engine.restart().await
 }
 
 #[tauri::command]
