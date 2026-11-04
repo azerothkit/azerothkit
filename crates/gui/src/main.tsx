@@ -16,6 +16,10 @@ if (import.meta.hot) {
 export const router = createRouter({
     routeTree,
     history: createHashHistory(),
+    scrollRestoration: true,
+    scrollRestorationBehavior: 'instant',
+    getScrollRestorationKey: (location) => location.pathname,
+    scrollToTopSelectors: ['#main-scroll-area'],
 })
 
 declare module '@tanstack/react-router' {
