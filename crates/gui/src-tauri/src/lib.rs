@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use azerothkit_core::{
-    app_paths::AppPaths,
-    settings::SettingsStore,
-};
+use azerothkit_core::{app_paths::AppPaths, settings::SettingsStore};
 use tauri::Manager;
 
 mod commands;
@@ -23,15 +20,11 @@ fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
-fn export_bindings(
-    builder: &tauri_specta::Builder<tauri::Wry>,
-) {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../src/shared/api/rust/bindings.ts");
+fn export_bindings(builder: &tauri_specta::Builder<tauri::Wry>) {
+    let path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/shared/api/rust/bindings.ts");
 
-    std::fs::create_dir_all(
-        path.parent().expect("Bindings path must have a parent"),
-    )
+    std::fs::create_dir_all(path.parent().expect("Bindings path must have a parent"))
         .expect("Failed to create bindings directory");
 
     builder
@@ -45,10 +38,20 @@ fn export_bindings(
 pub fn run() {
     let builder = command_builder();
 
-    #[cfg(debug_assertions)]
-    export_bindings(&builder);
+    let app_builder = tauri::Builder::default();
 
-    tauri::Builder::default()
+    #[cfg(desktop)]
+    let app_builder = app_builder.plugin(
+        tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }),
+    );
+
+    app_builder
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {

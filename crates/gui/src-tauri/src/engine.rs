@@ -1,7 +1,4 @@
-use std::{
-    sync::Mutex,
-    time::Duration,
-};
+use std::{sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
@@ -10,16 +7,7 @@ use tokio::sync::Mutex as AsyncMutex;
 const ENGINE_STATUS_CHANGED: &str = "engine-status-changed";
 const MOCK_TRANSITION_DELAY: Duration = Duration::from_secs(1);
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    specta::Type,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum EngineStatus {
     Stopped,
@@ -62,15 +50,8 @@ impl EngineState {
             .map_err(|_| "Engine state lock is poisoned".to_owned())
     }
 
-    async fn start_inner(
-        &self,
-        app: &AppHandle,
-    ) -> Result<EngineSnapshot, String> {
-        self.transition(
-            app,
-            &[EngineStatus::Stopped],
-            EngineStatus::Starting,
-        )?;
+    async fn start_inner(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
+        self.transition(app, &[EngineStatus::Stopped], EngineStatus::Starting)?;
 
         tokio::time::sleep(MOCK_TRANSITION_DELAY).await;
 
@@ -89,17 +70,10 @@ impl EngineState {
         //     return Err(format!("Failed to initialize engine: {error}"));
         // }
 
-        self.transition(
-            app,
-            &[EngineStatus::Starting],
-            EngineStatus::WaitingForGame,
-        )
+        self.transition(app, &[EngineStatus::Starting], EngineStatus::WaitingForGame)
     }
 
-    async fn stop_inner(
-        &self,
-        app: &AppHandle,
-    ) -> Result<EngineSnapshot, String> {
+    async fn stop_inner(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
         self.transition(
             app,
             &[
@@ -113,11 +87,7 @@ impl EngineState {
         // Replace this delay with the real engine shutdown.
         tokio::time::sleep(MOCK_TRANSITION_DELAY).await;
 
-        self.transition(
-            app,
-            &[EngineStatus::Stopping],
-            EngineStatus::Stopped,
-        )
+        self.transition(app, &[EngineStatus::Stopping], EngineStatus::Stopped)
     }
 
     fn transition(
@@ -134,8 +104,7 @@ impl EngineState {
         if !allowed.contains(&snapshot.status) {
             return Err(format!(
                 "Cannot transition engine from {:?} to {:?}",
-                snapshot.status,
-                next_status,
+                snapshot.status, next_status,
             ));
         }
 
@@ -160,10 +129,7 @@ impl EngineState {
         Ok(next)
     }
 
-    pub async fn start(
-        &self,
-        app: &AppHandle,
-    ) -> Result<EngineSnapshot, String> {
+    pub async fn start(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
         let _operation = self
             .operation
             .try_lock()
@@ -172,10 +138,7 @@ impl EngineState {
         self.start_inner(app).await
     }
 
-    pub async fn stop(
-        &self,
-        app: &AppHandle,
-    ) -> Result<EngineSnapshot, String> {
+    pub async fn stop(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
         let _operation = self
             .operation
             .try_lock()
@@ -184,10 +147,7 @@ impl EngineState {
         self.stop_inner(app).await
     }
 
-    pub async fn restart(
-        &self,
-        app: &AppHandle,
-    ) -> Result<EngineSnapshot, String> {
+    pub async fn restart(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
         let _operation = self
             .operation
             .try_lock()

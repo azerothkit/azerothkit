@@ -18,9 +18,7 @@ pub struct SettingsSnapshot {
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_engine_snapshot(
-    engine: State<'_, EngineState>,
-) -> Result<EngineSnapshot, String> {
+pub fn get_engine_snapshot(engine: State<'_, EngineState>) -> Result<EngineSnapshot, String> {
     engine.snapshot()
 }
 
@@ -58,9 +56,7 @@ pub async fn get_settings_snapshot(
 ) -> Result<SettingsSnapshot, String> {
     let store = Arc::clone(store.inner());
 
-    let settings = tauri::async_runtime::spawn_blocking(
-        move || store.snapshot(),
-    )
+    let settings = tauri::async_runtime::spawn_blocking(move || store.snapshot())
         .await
         .map_err(|error| format!("Settings task failed: {error}"))?
         .map_err(|error| format!("{error:#}"))?;
@@ -80,9 +76,7 @@ pub async fn save_client_settings(
 ) -> Result<AppSettings, String> {
     let store = Arc::clone(store.inner());
 
-    tauri::async_runtime::spawn_blocking(move || {
-        store.save_client_settings(client_id, settings)
-    })
+    tauri::async_runtime::spawn_blocking(move || store.save_client_settings(client_id, settings))
         .await
         .map_err(|error| format!("Settings task failed: {error}"))?
         .map_err(|error| format!("{error:#}"))
@@ -96,9 +90,7 @@ pub async fn set_selected_client(
 ) -> Result<AppSettings, String> {
     let store = Arc::clone(store.inner());
 
-    tauri::async_runtime::spawn_blocking(move || {
-        store.set_selected_client(client_id)
-    })
+    tauri::async_runtime::spawn_blocking(move || store.set_selected_client(client_id))
         .await
         .map_err(|error| format!("Settings task failed: {error}"))?
         .map_err(|error| format!("{error:#}"))

@@ -12,7 +12,7 @@ type BootstrapState =
     | { status: 'fail'; eventId: string }
 
 export function Bootstrap({ children }: PropsWithChildren) {
-    const [state, setState] = useState<BootstrapState>({ status: 'ready' })
+    const [state] = useState<BootstrapState>({ status: 'ready' })
 
     useEffect(() => {
         // initApp()
