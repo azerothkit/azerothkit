@@ -5,6 +5,7 @@ import { settingsSnapshotQuery } from './queries'
 
 function useSettingsMutation<TVariables>(
     mutationFn: (variables: TVariables) => Promise<AppSettings>,
+    onSaved?: (settings: AppSettings) => void,
 ) {
     const queryClient = useQueryClient()
 
@@ -37,12 +38,14 @@ function useSettingsMutation<TVariables>(
                     }
                 },
             )
+
+            onSaved?.(settings)
         },
     })
 }
 
-export const useSetSelectedClient = () => {
-    return useSettingsMutation(settingsApi.setSelectedClient)
+export const useSetSelectedClient = (onSaved?: () => void) => {
+    return useSettingsMutation(settingsApi.setSelectedClient, onSaved)
 }
 
 export const useSaveClientSettings = () => {

@@ -5,13 +5,50 @@ use azerothkit_core::{
     settings::{AppSettings, ClientSettings, SettingsStore},
 };
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, State};
+
+use crate::engine::{EngineSnapshot, EngineState};
 
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsSnapshot {
     pub clients: Vec<ClientDescriptor>,
     pub settings: AppSettings,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_engine_snapshot(
+    engine: State<'_, EngineState>,
+) -> Result<EngineSnapshot, String> {
+    engine.snapshot()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn start_engine(
+    app: AppHandle,
+    engine: State<'_, EngineState>,
+) -> Result<EngineSnapshot, String> {
+    engine.start(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn stop_engine(
+    app: AppHandle,
+    engine: State<'_, EngineState>,
+) -> Result<EngineSnapshot, String> {
+    engine.stop(&app).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn restart_engine(
+    app: AppHandle,
+    engine: State<'_, EngineState>,
+) -> Result<EngineSnapshot, String> {
+    engine.restart(&app).await
 }
 
 #[tauri::command]

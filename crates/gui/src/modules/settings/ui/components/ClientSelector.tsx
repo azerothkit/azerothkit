@@ -20,6 +20,7 @@ type ClientSelectorProps = {
     selectedClient: ClientId
     locked: boolean
     disabled: boolean
+    onClientChanged: () => void
 }
 
 export const ClientSelector = ({
@@ -27,9 +28,10 @@ export const ClientSelector = ({
     selectedClient,
     locked: hasUnsavedChanges,
     disabled,
+    onClientChanged,
 }: ClientSelectorProps) => {
     const id = useId()
-    const selection = useSetSelectedClient()
+    const selection = useSetSelectedClient(onClientChanged)
 
     const [pendingClient, setPendingClient] = useState<ClientId | null>(null)
 

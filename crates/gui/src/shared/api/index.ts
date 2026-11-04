@@ -1,4 +1,8 @@
 export { commands } from './rust/bindings'
+export { unwrapCommand } from './unwrap'
+export { listenEngineStatus } from './engine'
+
+export type { EngineSnapshot, EngineStatus } from './engine'
 
 export type {
     AppSettings_Serialize,

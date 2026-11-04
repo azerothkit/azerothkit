@@ -1,14 +1,15 @@
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSaveClientSettings } from '@/core/settings'
-import type { ClientDescriptor, ClientSettings } from '@/shared/api'
+import type { AppSettings, ClientDescriptor, ClientSettings } from '@/shared/api'
 import {
     applyTimeOverrideForm,
     createTimeOverrideSchema,
     toTimeOverrideForm,
     type TimeOverrideFormValues,
 } from '../forms/time-override'
+import { useEffect, useState } from 'react'
+import { useEngine } from '@/core/engine'
 
 type UseTimeOverrideFormOptions = {
     client: ClientDescriptor
@@ -18,6 +19,8 @@ type UseTimeOverrideFormOptions = {
 export const useTimeOverrideForm = ({ client, settings }: UseTimeOverrideFormOptions) => {
     const capabilities = client.capabilities.timeOverride
     const save = useSaveClientSettings()
+    const engine = useEngine()
+    const [restartOpen, setRestartOpen] = useState(false)
 
     const form = useForm<TimeOverrideFormValues>({
         resolver: zodResolver(createTimeOverrideSchema(capabilities)),
@@ -33,6 +36,20 @@ export const useTimeOverrideForm = ({ client, settings }: UseTimeOverrideFormOpt
         }
     }, [settings, isDirty, save.isPending, reset])
 
+    const handleSaved = (savedSettings: AppSettings) => {
+        const saved = savedSettings.settingsByClient[client.id]
+
+        if (saved) {
+            reset(toTimeOverrideForm(saved.features.timeOverride))
+        }
+
+        const status = engine.getStatus()
+
+        if (status !== null && status !== 'stopped' && status !== 'stopping') {
+            setRestartOpen(true)
+        }
+    }
+
     const onSubmit = form.handleSubmit((values) => {
         if (!settings || !capabilities) return
 
@@ -42,13 +59,7 @@ export const useTimeOverrideForm = ({ client, settings }: UseTimeOverrideFormOpt
                 settings: applyTimeOverrideForm(values, settings, capabilities),
             },
             {
-                onSuccess: (savedSettings) => {
-                    const saved = savedSettings.settingsByClient[client.id]
-
-                    if (saved) {
-                        reset(toTimeOverrideForm(saved.features.timeOverride))
-                    }
-                },
+                onSuccess: handleSaved,
             },
         )
     })
@@ -59,10 +70,15 @@ export const useTimeOverrideForm = ({ client, settings }: UseTimeOverrideFormOpt
     }
 
     const initialize = () => {
-        save.mutate({
-            clientId: client.id,
-            settings: {},
-        })
+        save.mutate(
+            {
+                clientId: client.id,
+                settings: {},
+            },
+            {
+                onSuccess: handleSaved,
+            },
+        )
     }
 
     return {
@@ -71,5 +87,9 @@ export const useTimeOverrideForm = ({ client, settings }: UseTimeOverrideFormOpt
         onSubmit,
         discard,
         initialize,
+        restartOpen,
+        setRestartOpen,
+        restart: engine.restart,
+        restartBusy: engine.isBusy,
     }
 }

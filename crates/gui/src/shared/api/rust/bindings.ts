@@ -4,6 +4,10 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 
 /** Commands */
 export const commands = {
+	getEngineSnapshot: () => typedError<EngineSnapshot, string>(__TAURI_INVOKE("get_engine_snapshot")),
+	startEngine: () => typedError<EngineSnapshot, string>(__TAURI_INVOKE("start_engine")),
+	stopEngine: () => typedError<EngineSnapshot, string>(__TAURI_INVOKE("stop_engine")),
+	restartEngine: () => typedError<EngineSnapshot, string>(__TAURI_INVOKE("restart_engine")),
 	getSettingsSnapshot: () => typedError<SettingsSnapshot_Serialize, string>(__TAURI_INVOKE("get_settings_snapshot")),
 	saveClientSettings: (clientId: ClientId, settings: ClientSettings_Deserialize) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("save_client_settings", { clientId, settings })),
 	setSelectedClient: (clientId: ClientId) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("set_selected_client", { clientId })),
@@ -59,6 +63,13 @@ export type ClientSettings_Serialize = {
 };
 
 export type DurationUnit = "seconds" | "minutes" | "hours";
+
+export type EngineSnapshot = {
+	status: EngineStatus,
+	revision: number,
+};
+
+export type EngineStatus = "stopped" | "starting" | "waiting_for_game" | "waiting_for_keys" | "running" | "stopping";
 
 export type FeatureSettings = FeatureSettings_Serialize | FeatureSettings_Deserialize;
 

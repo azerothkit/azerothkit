@@ -16,15 +16,32 @@ import {
 import { useTimeOverrideForm } from '../hooks/useTimeOverrideForm'
 import { ClientSelector } from './ClientSelector'
 import { TimeOverrideFields } from './TimeOverrideFields'
+import { RestartEngineDialog } from '@/modules/settings/ui/components/RestartEngineDialog'
 
 type ClientSettingsEditorProps = {
     clients: ClientDescriptor[]
     client: ClientDescriptor
     settings?: ClientSettings
+    onClientChanged: () => void
 }
 
-export const ClientSettingsEditor = ({ clients, client, settings }: ClientSettingsEditorProps) => {
-    const { form, save, onSubmit, discard, initialize } = useTimeOverrideForm({ client, settings })
+export const ClientSettingsEditor = ({
+    clients,
+    client,
+    settings,
+    onClientChanged,
+}: ClientSettingsEditorProps) => {
+    const {
+        form,
+        save,
+        onSubmit,
+        discard,
+        initialize,
+        restartOpen,
+        setRestartOpen,
+        restart,
+        restartBusy,
+    } = useTimeOverrideForm({ client, settings })
 
     const { isDirty, isSubmitting } = form.formState
     const busy = save.isPending || isSubmitting
@@ -43,6 +60,7 @@ export const ClientSettingsEditor = ({ clients, client, settings }: ClientSettin
                 selectedClient={client.id}
                 locked={isDirty}
                 disabled={busy}
+                onClientChanged={onClientChanged}
             />
 
             {save.isError && (
@@ -121,6 +139,13 @@ export const ClientSettingsEditor = ({ clients, client, settings }: ClientSettin
                     </form>
                 </FormProvider>
             )}
+
+            <RestartEngineDialog
+                open={restartOpen}
+                onOpenChange={setRestartOpen}
+                busy={restartBusy}
+                onRestart={restart}
+            />
 
             {blocker.status === 'blocked' && (
                 <AlertDialog

@@ -7,10 +7,15 @@ use azerothkit_core::{
 use tauri::Manager;
 
 mod commands;
+mod engine;
 
 fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(tauri_specta::collect_commands![
+            commands::get_engine_snapshot,
+            commands::start_engine,
+            commands::stop_engine,
+            commands::restart_engine,
             commands::get_settings_snapshot,
             commands::save_client_settings,
             commands::set_selected_client,
@@ -18,7 +23,6 @@ fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
-#[cfg(any(debug_assertions, test))]
 fn export_bindings(
     builder: &tauri_specta::Builder<tauri::Wry>,
 ) {
@@ -54,6 +58,7 @@ pub fn run() {
             let store = SettingsStore::open(&paths)?;
 
             app.manage(Arc::new(store));
+            app.manage(engine::EngineState::default());
 
             Ok(())
         })
@@ -62,12 +67,5 @@ pub fn run() {
 }
 
 pub fn export_typescript_bindings() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../src/shared/api/rust/bindings.ts");
-
-    command_builder()
-        .export(specta_typescript::Typescript::default(), &path)
-        .expect("Failed to export TypeScript bindings");
-
-    println!("TypeScript bindings exported to {}", path.display());
+    export_bindings(&command_builder());
 }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
+import { useEngine } from '@/core/engine'
 import { settingsSnapshotQuery } from '@/core/settings'
 import { Button, buttonVariants } from '@/shared/ui'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui'
@@ -12,7 +12,7 @@ import { formatTimeOfDay } from '@/shared/lib/time'
 
 export const MainScreen = () => {
     const query = useQuery(settingsSnapshotQuery)
-    const [enabled, setEnabled] = useState(false)
+    const engine = useEngine()
 
     if (query.isPending) {
         return <PageSkeleton />
@@ -80,8 +80,10 @@ export const MainScreen = () => {
             </div>
 
             <ActivationControl
-                enabled={enabled}
-                onEnabledChange={setEnabled}
+                active={engine.isActive}
+                busy={engine.isBusy}
+                onToggle={engine.toggle}
+                onReconnect={engine.connection === 'error' ? engine.reconnect : undefined}
             />
 
             {client.capabilities.timeOverride &&

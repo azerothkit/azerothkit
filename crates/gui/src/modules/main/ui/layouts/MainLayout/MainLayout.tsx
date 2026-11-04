@@ -1,7 +1,7 @@
 import { Link, Outlet } from '@tanstack/react-router'
-
 import { Power, SlidersHorizontal, Terminal } from 'lucide-react'
-import { RouterTextLink, TextLink } from '@/shared/ui'
+import { EngineStatusIndicator } from '@/core/engine'
+import { TextLink } from '@/shared/ui'
 import { GITHUB_REPOSITORY_URL } from '@/shared/config/links'
 
 const navigation = [
@@ -18,13 +18,7 @@ export const MainLayout = () => {
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <span className="text-sm font-semibold tracking-tight">Azerothkit</span>
 
-                        <TextLink
-                            href={GITHUB_REPOSITORY_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Unofficial app
-                        </TextLink>
+                        <EngineStatusIndicator size="sm" />
                     </div>
 
                     <nav
@@ -63,10 +57,14 @@ export const MainLayout = () => {
             </main>
 
             <footer className="shrink-0 border-t">
-                <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 px-6 py-3 text-xs text-muted-foreground">
-                    <span>Preview · Rust service not connected</span>
-
-                    <RouterTextLink to="/logs">View logs</RouterTextLink>
+                <div className="mx-auto flex w-full max-w-xl items-center justify-center gap-4 px-6 py-3 text-xs text-muted-foreground">
+                    <TextLink
+                        href={GITHUB_REPOSITORY_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Unofficial app
+                    </TextLink>
                 </div>
             </footer>
         </div>

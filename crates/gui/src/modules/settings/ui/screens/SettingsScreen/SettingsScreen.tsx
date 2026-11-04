@@ -4,9 +4,23 @@ import { Button } from '@/shared/ui'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui'
 import { ClientSettingsEditor } from '../../components/ClientSettingsEditor'
 import { PageSkeleton } from '@/shared/ui'
+import { useState } from 'react'
+import { useEngine } from '@/core/engine'
+import { RestartEngineDialog } from '../../components/RestartEngineDialog'
 
 export const SettingsScreen = () => {
     const query = useQuery(settingsSnapshotQuery)
+
+    const engine = useEngine()
+    const [restartOpen, setRestartOpen] = useState(false)
+
+    const onClientChanged = () => {
+        const status = engine.getStatus()
+
+        if (status !== null && status !== 'stopped' && status !== 'stopping') {
+            setRestartOpen(true)
+        }
+    }
 
     if (query.isPending) {
         return <PageSkeleton />
@@ -58,6 +72,14 @@ export const SettingsScreen = () => {
                 clients={clients}
                 client={client}
                 settings={settings.settingsByClient[client.id]}
+                onClientChanged={onClientChanged}
+            />
+
+            <RestartEngineDialog
+                open={restartOpen}
+                onOpenChange={setRestartOpen}
+                busy={engine.isBusy}
+                onRestart={engine.restart}
             />
         </section>
     )

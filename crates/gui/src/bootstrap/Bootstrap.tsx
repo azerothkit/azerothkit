@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useEffect } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/core/query'
+import { Toaster } from '@/shared/ui'
+import { EngineProvider } from '@/core/engine'
 
 type BootstrapState =
     | { status: 'pending' }
@@ -38,7 +40,11 @@ export function Bootstrap({ children }: PropsWithChildren) {
 
     return (
         <>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            <QueryClientProvider client={queryClient}>
+                <Toaster>
+                    <EngineProvider>{children}</EngineProvider>
+                </Toaster>
+            </QueryClientProvider>
         </>
     )
 }
