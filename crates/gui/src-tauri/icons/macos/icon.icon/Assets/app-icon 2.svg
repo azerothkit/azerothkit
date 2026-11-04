@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 128 128">
+  <title>A client badge</title>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#1b2029"/>
+      <stop offset="0.6" stop-color="#10141b"/>
+      <stop offset="1" stop-color="#07090d"/>
+    </radialGradient>
+    <linearGradient id="foreground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/>
+      <stop offset="1" stop-color="#d6a43d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="50" fill="url(#background)" stroke="url(#foreground)" stroke-width="8"/>
+  <path d="M35 93L57 35H71L93 93H80L75 79H53L48 93ZM57 68H71L64 48Z" transform="translate(0 -4)" fill="url(#foreground)" fill-rule="evenodd"/>
+</svg>
