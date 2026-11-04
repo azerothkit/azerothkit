@@ -9,12 +9,13 @@
     "preview": "vite preview",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build --bundles app",
+    "tauri:build:mac": "tauri build --target universal-apple-darwin --bundles dmg",
     "tauri:build:debug": "tauri build --debug --no-bundle",
     "lint": "expo lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "icon": "tauri icon -- src-tauri/icons/icon.svg",
-    "bindings": "cargo run --manifest-path src-tauri/Cargo.toml --bin export-bindings"
+    "bindings": "cargo run --manifest-path src-tauri/Cargo.toml --bin export-bindings --features bindings-export"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

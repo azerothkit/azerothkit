@@ -36,3 +36,10 @@ anyhow = "1.0.104"
 tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
 
+[features]
+bindings-export = []
+
+[[bin]]
+name = "export-bindings"
+path = "src/bin/export-bindings.rs"
+required-features = ["bindings-export"]

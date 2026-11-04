@@ -1,0 +1,112 @@
+name: Build desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS universal
+            os: macos-latest
+            target: universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+          - name: Windows x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
+
+          - name: Linux x64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: |
+          npm install --global corepack
+          corepack enable pnpm
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        working-directory: crates/gui
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('crates/gui/package.json', '**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Install frontend dependencies
+        working-directory: crates/gui
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Rust from rust-toolchain.toml
+        shell: bash
+        run: |
+          rustc --version
+          rustup target add ${{ runner.os == 'macOS' && 'aarch64-apple-darwin x86_64-apple-darwin' || matrix.target }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+          key: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils \
+            libssl-dev
+
+      - name: Build and upload
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/gui
+          tauriScript: pnpm exec tauri
+          args: --target ${{ matrix.target }} -- --locked
+
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: "[platform]-[arch]-[bundle]"
+
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Azerothkit {0}', github.ref_name) || '' }}
+          releaseDraft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
