@@ -8,6 +8,7 @@ use serde::Serialize;
 use tauri::{AppHandle, State};
 
 use crate::engine::{EngineSnapshot, EngineState};
+use azerothkit_core::app_paths::AppPaths;
 
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -94,4 +95,31 @@ pub async fn set_selected_client(
         .await
         .map_err(|error| format!("Settings task failed: {error}"))?
         .map_err(|error| format!("{error:#}"))
+}
+
+#[derive(Debug, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AppInfo {
+    pub name: String,
+    pub version: String,
+    pub logs_dir: String,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_app_info(
+    app: AppHandle,
+    paths: State<'_, AppPaths>,
+) -> AppInfo {
+    let package = app.package_info();
+
+    AppInfo {
+        name: app
+            .config()
+            .product_name
+            .clone()
+            .unwrap_or_else(|| package.name.clone()),
+        version: package.version.to_string(),
+        logs_dir: paths.logs_dir().to_string_lossy().into_owned(),
+    }
 }

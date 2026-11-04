@@ -5,6 +5,7 @@ use tauri::Manager;
 
 mod commands;
 mod engine;
+mod logging;
 
 fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
@@ -16,6 +17,7 @@ fn command_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::get_settings_snapshot,
             commands::save_client_settings,
             commands::set_selected_client,
+            commands::get_app_info,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
@@ -37,6 +39,8 @@ fn export_bindings(builder: &tauri_specta::Builder<tauri::Wry>) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = command_builder();
+    let paths = AppPaths::discover()
+        .expect("Failed to determine application directories");
 
     let app_builder = tauri::Builder::default();
 
@@ -52,14 +56,15 @@ pub fn run() {
     );
 
     app_builder
+        .plugin(logging::plugin(paths.logs_dir()))
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
 
-            let paths = AppPaths::discover()?;
             let store = SettingsStore::open(&paths)?;
 
+            app.manage(paths);
             app.manage(Arc::new(store));
             app.manage(engine::EngineState::default());
 

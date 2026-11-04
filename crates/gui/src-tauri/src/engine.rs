@@ -130,6 +130,7 @@ impl EngineState {
     }
 
     pub async fn start(&self, app: &AppHandle) -> Result<EngineSnapshot, String> {
+        log::info!("Starting engine");
         let _operation = self
             .operation
             .try_lock()

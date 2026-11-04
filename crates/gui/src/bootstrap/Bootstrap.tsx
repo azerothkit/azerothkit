@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/core/query'
 import { Toaster } from '@/shared/ui'
 import { EngineProvider } from '@/core/engine'
+import { connectLogs } from '@/core/logs'
 
 type BootstrapState =
     | { status: 'pending' }
@@ -25,6 +26,7 @@ export function Bootstrap({ children }: PropsWithChildren) {
         //     })
         //     .finally(() => {
         //     })
+        return connectLogs()
     }, [])
 
     if (state.status === 'fail') {

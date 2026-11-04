@@ -3,6 +3,7 @@ import { Power, SlidersHorizontal, Terminal } from 'lucide-react'
 import { EngineStatusIndicator } from '@/core/engine'
 import { TextLink } from '@/shared/ui'
 import { GITHUB_REPOSITORY_URL } from '@/shared/config/links'
+import { useAppInfo } from '@/core/app'
 
 const navigation = [
     { to: '/', label: 'Overview', icon: Power },
@@ -11,12 +12,16 @@ const navigation = [
 ] as const
 
 export const MainLayout = () => {
+    const { data: appInfo } = useAppInfo()
+
     return (
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
             <header className="shrink-0 border-b">
                 <div className="mx-auto w-full max-w-xl px-6 pt-5 pb-4">
                     <div className="mb-5 flex items-center justify-between gap-4">
-                        <span className="text-sm font-semibold tracking-tight">Azerothkit</span>
+                        <span className="text-sm font-semibold tracking-tight">
+                            {appInfo?.name}
+                        </span>
 
                         <EngineStatusIndicator size="sm" />
                     </div>
@@ -63,7 +68,7 @@ export const MainLayout = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        Unofficial app
+                        Unofficial app {appInfo?.version ? `v${appInfo?.version}` : ''}
                     </TextLink>
                 </div>
             </footer>

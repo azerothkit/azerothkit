@@ -11,9 +11,16 @@ export const commands = {
 	getSettingsSnapshot: () => typedError<SettingsSnapshot_Serialize, string>(__TAURI_INVOKE("get_settings_snapshot")),
 	saveClientSettings: (clientId: ClientId, settings: ClientSettings_Deserialize) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("save_client_settings", { clientId, settings })),
 	setSelectedClient: (clientId: ClientId) => typedError<AppSettings_Serialize, string>(__TAURI_INVOKE("set_selected_client", { clientId })),
+	getAppInfo: () => __TAURI_INVOKE<AppInfo>("get_app_info"),
 };
 
 /* Types */
+export type AppInfo = {
+	name: string,
+	version: string,
+	logsDir: string,
+};
+
 export type AppSettings = AppSettings_Serialize | AppSettings_Deserialize;
 
 export type AppSettings_Deserialize = {

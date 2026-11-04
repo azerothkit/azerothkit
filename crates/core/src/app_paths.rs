@@ -44,4 +44,8 @@ impl AppPaths {
     pub fn settings_file(&self) -> PathBuf {
         self.config_dir.join("settings.json")
     }
+
+    pub fn logs_dir(&self) -> PathBuf {
+        self.data_dir.join("logs")
+    }
 }
