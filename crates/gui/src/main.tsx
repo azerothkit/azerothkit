@@ -5,6 +5,13 @@ import './index.css'
 import { createRouter, RouterProvider, createHashHistory } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { initSystemTheme } from '@/bootstrap/theme'
+
+const disposeSystemTheme = initSystemTheme()
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(disposeSystemTheme)
+}
 
 export const router = createRouter({
     routeTree,
