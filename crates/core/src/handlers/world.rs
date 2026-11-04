@@ -2,17 +2,19 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 
+use crate::features::WorldPipeline;
+use crate::lifecycle::WorldLifecycle;
 use crate::protocol::world::{WorldCodec, WorldEvent};
 use crate::sessions::SessionStore;
 
 use super::{Direction, Handler, HandlerInput, HandlerOutput};
-use crate::features::WorldPipeline;
 
 pub(super) struct WorldHandler {
     connection_id: u64,
     sessions: Arc<SessionStore>,
     codec: WorldCodec,
     features: WorldPipeline,
+    lifecycle: WorldLifecycle,
     encryption_announced: bool,
 }
 
@@ -21,12 +23,14 @@ impl WorldHandler {
         connection_id: u64,
         sessions: Arc<SessionStore>,
         features: WorldPipeline,
+        lifecycle: WorldLifecycle,
     ) -> Self {
         Self {
             connection_id,
             sessions,
             codec: WorldCodec::default(),
             features,
+            lifecycle,
             encryption_announced: false,
         }
     }
@@ -52,6 +56,9 @@ impl Handler for WorldHandler {
 
                 WorldEvent::Packet(frame) => {
                     if let Some(request) = &frame.auth {
+                        self.lifecycle.waiting_for_keys();
+                        self.encryption_announced = false;
+
                         let secrets = self.sessions.realm_join_secrets()?;
                         let sessions = self.sessions.world_session_candidates()?;
 
@@ -65,8 +72,8 @@ impl Handler for WorldHandler {
                         if request.is_initial() {
                             self.sessions.add_world_candidates(&keys)?;
                         } else {
-                            // A valid continued-session proof authenticates
-                            // the parent session key before GCM starts.
+                            // A continued-session proof authenticates the
+                            // parent key, but does not verify this stream's GCM.
                             for key in keys {
                                 self.sessions.confirm_world_session(key)?;
                             }
@@ -77,11 +84,15 @@ impl Handler for WorldHandler {
 
                     if let Some(session) = frame.verified_session {
                         self.sessions.confirm_world_session(session)?;
+                        self.lifecycle.running();
 
                         if !self.encryption_announced {
                             self.encryption_announced = true;
 
-                            log::info!("[{}] World encryption verified", self.connection_id,);
+                            log::info!(
+                                "[{}] World encryption verified",
+                                self.connection_id,
+                            );
                         }
                     }
 
@@ -93,7 +104,9 @@ impl Handler for WorldHandler {
                         None
                     };
 
-                    let packets = rewritten.as_deref().unwrap_or(frame.packets.as_slice());
+                    let packets = rewritten
+                        .as_deref()
+                        .unwrap_or(frame.packets.as_slice());
 
                     output.push(
                         self.codec

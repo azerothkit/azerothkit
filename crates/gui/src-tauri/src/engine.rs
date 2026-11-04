@@ -2,6 +2,7 @@ use azerothkit_core::{
     actions,
     app_paths::AppPaths,
     engine::EngineHandle,
+    lifecycle::EnginePhase,
 };
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
@@ -18,6 +19,16 @@ pub enum EngineStatus {
     WaitingForKeys,
     Running,
     Stopping,
+}
+
+impl From<EnginePhase> for EngineStatus {
+    fn from(phase: EnginePhase) -> Self {
+        match phase {
+            EnginePhase::WaitingForGame => Self::WaitingForGame,
+            EnginePhase::WaitingForKeys => Self::WaitingForKeys,
+            EnginePhase::Running => Self::Running,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type)]
@@ -60,6 +71,7 @@ impl EngineState {
             paths,
             snapshot: snapshot_tx,
             engine: None,
+            phases: None,
         };
 
         tauri::async_runtime::spawn(controller.run(command_rx));
@@ -97,7 +109,7 @@ impl EngineState {
             .await
             .map_err(|_| "Engine controller is unavailable".to_owned())?;
 
-        // The controller keeps executing even if this request is dropped.
+        // Dropping the caller does not cancel the accepted operation.
         reply_rx
             .await
             .map_err(|_| "Engine controller stopped before replying".to_owned())?
@@ -109,6 +121,7 @@ struct EngineController {
     paths: AppPaths,
     snapshot: watch::Sender<EngineSnapshot>,
     engine: Option<EngineHandle>,
+    phases: Option<watch::Receiver<EnginePhase>>,
 }
 
 impl EngineController {
@@ -118,13 +131,30 @@ impl EngineController {
                 tokio::select! {
                     biased;
 
+                    // Completion takes precedence over pending phase updates.
                     result = engine.wait() => {
                         self.engine = None;
+                        self.phases = None;
                         let _ = self.finish(result);
                         continue;
                     }
 
                     command = commands.recv() => command,
+
+                    phase = next_phase(&mut self.phases) => {
+                        match phase {
+                            Some(phase) => {
+                                self.publish(phase.into());
+                            }
+                            None => {
+                                // Channel closure is not engine completion.
+                                // EngineHandle::wait() supplies the result.
+                                self.phases = None;
+                            }
+                        }
+
+                        continue;
+                    }
                 }
             } else {
                 commands.recv().await
@@ -155,8 +185,16 @@ impl EngineController {
 
         match actions::start_from_settings(&self.paths).await {
             Ok(engine) => {
+                let mut phases = engine.subscribe_phase();
+
+                // Read the current phase and mark that version as observed.
+                // Later updates remain available through changed().
+                let phase = *phases.borrow_and_update();
+
                 self.engine = Some(engine);
-                Ok(self.publish(EngineStatus::WaitingForGame))
+                self.phases = Some(phases);
+
+                Ok(self.publish(phase.into()))
             }
             Err(error) => {
                 let message = format!("Failed to start engine: {error:#}");
@@ -173,6 +211,9 @@ impl EngineController {
         let Some(engine) = self.engine.take() else {
             return Ok(self.current_snapshot());
         };
+
+        // Ignore shutdown-time phase changes from this run.
+        self.phases = None;
 
         self.publish(EngineStatus::Stopping);
         log::info!("Stopping engine");
@@ -226,12 +267,25 @@ impl EngineController {
 
         self.snapshot.send_replace(next);
 
-        // A single controller preserves publication order.
-        // Notification failure does not cancel the engine operation.
         if let Err(error) = self.app.emit(ENGINE_STATUS_CHANGED, next) {
             log::warn!("Failed to emit engine status: {error}");
         }
 
         next
     }
+}
+
+async fn next_phase(
+    receiver: &mut Option<watch::Receiver<EnginePhase>>,
+) -> Option<EnginePhase> {
+    let Some(receiver) = receiver.as_mut() else {
+        return std::future::pending::<Option<EnginePhase>>().await;
+    };
+
+    if receiver.changed().await.is_err() {
+        return None;
+    }
+
+    let phase = *receiver.borrow_and_update();
+    Some(phase)
 }

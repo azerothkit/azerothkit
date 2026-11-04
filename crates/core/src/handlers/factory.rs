@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Result, ensure};
 
 use crate::features::{FeatureConfig, WorldPipeline};
+use crate::lifecycle::Lifecycle;
 use crate::protocol::bnet::BnetContext;
 use crate::sessions::SessionStore;
 
@@ -15,14 +16,20 @@ pub(crate) struct HandlerFactory {
     bnet: BnetContext,
     sessions: Arc<SessionStore>,
     features: FeatureConfig,
+    lifecycle: Arc<Lifecycle>,
 }
 
 impl HandlerFactory {
-    pub(crate) fn new(sessions: Arc<SessionStore>, features: FeatureConfig) -> Self {
+    pub(crate) fn new(
+        sessions: Arc<SessionStore>,
+        features: FeatureConfig,
+        lifecycle: Arc<Lifecycle>,
+    ) -> Self {
         Self {
             bnet: BnetContext::new(sessions.clone()),
             sessions,
             features,
+            lifecycle,
         }
     }
 
@@ -45,11 +52,13 @@ impl HandlerFactory {
             ))),
             HandlerKind::World => {
                 let pipeline = WorldPipeline::new(&self.features)?;
+                let lifecycle = self.lifecycle.register_world(connection_id);
 
                 Ok(Box::new(WorldHandler::new(
                     connection_id,
                     self.sessions.clone(),
                     pipeline,
+                    lifecycle,
                 )))
             }
         }

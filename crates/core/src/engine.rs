@@ -2,7 +2,9 @@ use std::future::Future;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, ensure};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, watch};
+
+use crate::lifecycle::{EnginePhase, Lifecycle};
 use tokio::task::{JoinHandle, JoinSet};
 
 use crate::capture::{Capture, CaptureConfig, CapturedTransport, is_capture_flow_closed};
@@ -61,6 +63,7 @@ impl EngineConfig {
 pub struct EngineHandle {
     shutdown: Option<oneshot::Sender<()>>,
     task: Option<JoinHandle<Result<()>>>,
+    phase: watch::Receiver<EnginePhase>,
 }
 
 impl EngineHandle {
@@ -84,6 +87,10 @@ impl EngineHandle {
 
         self.wait().await
     }
+
+    pub fn subscribe_phase(&self) -> watch::Receiver<EnginePhase> {
+        self.phase.clone()
+    }
 }
 
 impl Drop for EngineHandle {
@@ -104,8 +111,10 @@ pub(crate) async fn start(config: EngineConfig) -> Result<EngineHandle> {
         features,
     } = config;
 
+    let (lifecycle, phase) = Lifecycle::new();
+
     let sessions = Arc::new(SessionStore::default());
-    let factory = HandlerFactory::new(sessions, features);
+    let factory = HandlerFactory::new(sessions, features, lifecycle);
 
     let tls = tls_config.map(TlsMitm::load).transpose()?.map(Arc::new);
 
@@ -216,6 +225,7 @@ pub(crate) async fn start(config: EngineConfig) -> Result<EngineHandle> {
     Ok(EngineHandle {
         shutdown: Some(shutdown_tx),
         task: Some(task),
+        phase,
     })
 }
 
