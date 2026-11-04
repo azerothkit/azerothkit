@@ -1,6 +1,6 @@
+use std::path::PathBuf;
 use tauri::{Runtime, plugin::TauriPlugin};
 use tauri_plugin_log::{FileOpenStrategy, RotationStrategy, Target, TargetKind, TimezoneStrategy};
-use std::path::PathBuf;
 
 fn human_target(kind: TargetKind) -> Target {
     Target::new(kind).format(|out, message, record| {
@@ -33,9 +33,8 @@ pub fn plugin<R: Runtime>(logs_dir: PathBuf) -> TauriPlugin<R> {
                 file_name: Some("app".to_owned()),
             }),
             Target::new(TargetKind::Webview).format(|out, message, record| {
-                let timestamp = (TimezoneStrategy::UseUtc
-                    .get_now()
-                    .unix_timestamp_nanos() / 1_000_000) as i64;
+                let timestamp =
+                    (TimezoneStrategy::UseUtc.get_now().unix_timestamp_nanos() / 1_000_000) as i64;
 
                 let payload = serde_json::json!({
                     "timestamp": timestamp,

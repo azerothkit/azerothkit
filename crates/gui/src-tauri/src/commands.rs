@@ -25,25 +25,19 @@ pub fn get_engine_snapshot(engine: State<'_, EngineState>) -> Result<EngineSnaps
 
 #[tauri::command]
 #[specta::specta]
-pub async fn start_engine(
-    engine: State<'_, EngineState>,
-) -> Result<EngineSnapshot, String> {
+pub async fn start_engine(engine: State<'_, EngineState>) -> Result<EngineSnapshot, String> {
     engine.start().await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn stop_engine(
-    engine: State<'_, EngineState>,
-) -> Result<EngineSnapshot, String> {
+pub async fn stop_engine(engine: State<'_, EngineState>) -> Result<EngineSnapshot, String> {
     engine.stop().await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn restart_engine(
-    engine: State<'_, EngineState>,
-) -> Result<EngineSnapshot, String> {
+pub async fn restart_engine(engine: State<'_, EngineState>) -> Result<EngineSnapshot, String> {
     engine.restart().await
 }
 
@@ -104,10 +98,7 @@ pub struct AppInfo {
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_app_info(
-    app: AppHandle,
-    paths: State<'_, AppPaths>,
-) -> AppInfo {
+pub fn get_app_info(app: AppHandle, paths: State<'_, AppPaths>) -> AppInfo {
     let package = app.package_info();
 
     AppInfo {

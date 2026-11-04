@@ -39,21 +39,19 @@ fn export_bindings(builder: &tauri_specta::Builder<tauri::Wry>) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = command_builder();
-    let paths = AppPaths::discover()
-        .expect("Failed to determine application directories");
+    let paths = AppPaths::discover().expect("Failed to determine application directories");
 
-    let app_builder = tauri::Builder::default();
+    let app_builder =
+        tauri::Builder::default().plugin(tauri_plugin_window_state::Builder::new().build());
 
     #[cfg(desktop)]
-    let app_builder = app_builder.plugin(
-        tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
-        }),
-    );
+    let app_builder = app_builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+        }
+    }));
 
     app_builder
         .plugin(logging::plugin(paths.logs_dir()))
@@ -63,10 +61,7 @@ pub fn run() {
             builder.mount_events(app);
 
             let store = SettingsStore::open(&paths)?;
-            let engine = engine::EngineState::new(
-                app.handle().clone(),
-                paths.clone(),
-            );
+            let engine = engine::EngineState::new(app.handle().clone(), paths.clone());
 
             app.manage(paths);
             app.manage(Arc::new(store));

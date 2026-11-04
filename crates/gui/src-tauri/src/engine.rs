@@ -1,9 +1,4 @@
-use azerothkit_core::{
-    actions,
-    app_paths::AppPaths,
-    engine::EngineHandle,
-    lifecycle::EnginePhase,
-};
+use azerothkit_core::{actions, app_paths::AppPaths, engine::EngineHandle, lifecycle::EnginePhase};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{mpsc, oneshot, watch};
@@ -275,9 +270,7 @@ impl EngineController {
     }
 }
 
-async fn next_phase(
-    receiver: &mut Option<watch::Receiver<EnginePhase>>,
-) -> Option<EnginePhase> {
+async fn next_phase(receiver: &mut Option<watch::Receiver<EnginePhase>>) -> Option<EnginePhase> {
     let Some(receiver) = receiver.as_mut() else {
         return std::future::pending::<Option<EnginePhase>>().await;
     };

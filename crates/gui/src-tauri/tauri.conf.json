@@ -12,16 +12,28 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Azerothkit",
-        "width": 800,
-        "height": 600
+        "width": 550,
+        "height": 800,
+        "minWidth": 400,
+        "minHeight": 560,
+        "center": true,
+        "preventOverflow": true,
+        "resizable": true,
+        "maximized": false,
+        "fullscreen": false,
+        "decorations": true,
+        "backgroundColor": "#000",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {
       "csp": null
     }
   },
-  "bundle": {
+    "bundle": {
     "active": true,
     "targets": "all",
     "icon": [
