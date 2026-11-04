@@ -1,5 +1,5 @@
 import { cn } from 'cn'
-import { Button } from '@/shared/ui/components/button'
+import { Button } from '@/shared/ui'
 
 type ActivationControlProps = {
     enabled: boolean
@@ -65,12 +65,6 @@ export const ActivationControl = ({ enabled, onEnabledChange }: ActivationContro
                         {enabled ? 'Waiting for game' : 'Disabled'}
                     </h1>
                 </div>
-
-                <p className="mt-2 max-w-72 text-sm text-muted-foreground">
-                    {enabled
-                        ? 'Launch the selected WoW client to apply your settings.'
-                        : 'Enable the companion when you are ready to play.'}
-                </p>
             </div>
         </section>
     )

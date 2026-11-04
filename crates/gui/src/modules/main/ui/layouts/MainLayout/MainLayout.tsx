@@ -1,9 +1,13 @@
 import { Link, Outlet } from '@tanstack/react-router'
 
+import { Power, SlidersHorizontal, Terminal } from 'lucide-react'
+import { RouterTextLink, TextLink } from '@/shared/ui'
+import { GITHUB_REPOSITORY_URL } from '@/shared/config/links'
+
 const navigation = [
-    { to: '/', label: 'Overview' },
-    { to: '/settings', label: 'Settings' },
-    { to: '/logs', label: 'Logs' },
+    { to: '/', label: 'Overview', icon: Power },
+    { to: '/settings', label: 'Settings', icon: SlidersHorizontal },
+    { to: '/logs', label: 'Logs', icon: Terminal },
 ] as const
 
 export const MainLayout = () => {
@@ -14,14 +18,20 @@ export const MainLayout = () => {
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <span className="text-sm font-semibold tracking-tight">Azerothkit</span>
 
-                        <span className="text-xs text-muted-foreground">UI preview</span>
+                        <TextLink
+                            href={GITHUB_REPOSITORY_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Unofficial app
+                        </TextLink>
                     </div>
 
                     <nav
                         aria-label="Main navigation"
                         className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1"
                     >
-                        {navigation.map(({ to, label }) => (
+                        {navigation.map(({ to, label, icon: Icon }) => (
                             <Link
                                 key={to}
                                 to={to}
@@ -32,9 +42,14 @@ export const MainLayout = () => {
                                 inactiveProps={{
                                     className: 'text-muted-foreground hover:text-foreground',
                                 }}
-                                className="rounded-md px-3 py-2 text-center text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                {label}
+                                <Icon
+                                    className="size-4 shrink-0"
+                                    strokeWidth={1.75}
+                                    aria-hidden="true"
+                                />
+                                <span>{label}</span>
                             </Link>
                         ))}
                     </nav>
@@ -51,12 +66,7 @@ export const MainLayout = () => {
                 <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 px-6 py-3 text-xs text-muted-foreground">
                     <span>Preview · Rust service not connected</span>
 
-                    <Link
-                        to="/logs"
-                        className="shrink-0 underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        View logs
-                    </Link>
+                    <RouterTextLink to="/logs">View logs</RouterTextLink>
                 </div>
             </footer>
         </div>

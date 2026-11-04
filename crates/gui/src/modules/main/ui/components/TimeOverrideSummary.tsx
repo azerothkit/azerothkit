@@ -1,76 +1,73 @@
 import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
-import { Badge } from '@/shared/ui/components/badge'
-import { buttonVariants } from '@/shared/ui/components/button'
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/shared/ui/components/card'
+import { Badge } from '@/shared/ui'
+import { buttonVariants } from '@/shared/ui'
+import { Clock } from 'lucide-react'
+import type { DurationUnit } from '@/shared/lib/time'
+import { formatDuration } from '@/shared/lib/time'
 
 type TimeOverrideSummaryProps = {
+    enabled: boolean
     entryTime: string
     resetOnServerSync: boolean
-    dayLengthSeconds: number
+    dayLengthMs: number
+    dayLengthUnit: DurationUnit
 }
 
 export const TimeOverrideSummary = ({
+    enabled,
     entryTime,
     resetOnServerSync,
-    dayLengthSeconds,
+    dayLengthMs,
+    dayLengthUnit,
 }: TimeOverrideSummaryProps) => {
+    const formattedDayLength = formatDuration(dayLengthMs, dayLengthUnit, 'en')
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    Time override
-                    <Badge variant="secondary">Configured</Badge>
-                </CardTitle>
+        <div className="rounded-lg border px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-medium flex items-center gap-1.5">
+                        <Clock
+                            className="size-4 shrink-0"
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                        />{' '}
+                        Time override
+                    </h2>
 
-                <CardDescription>Saved settings for the selected client.</CardDescription>
+                    <Badge variant={enabled ? 'secondary' : 'outline'}>
+                        {enabled ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                </div>
 
-                <CardAction>
-                    <Link
-                        to="/settings"
-                        aria-label="Edit time override settings"
-                        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-                    >
-                        Edit
-                    </Link>
-                </CardAction>
-            </CardHeader>
+                <Link
+                    to="/settings"
+                    aria-label="Edit time override settings"
+                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-7 px-2')}
+                >
+                    Edit
+                </Link>
+            </div>
 
-            <CardContent>
-                <dl className="divide-y text-sm">
-                    <div className="flex items-baseline justify-between gap-4 py-3 first:pt-0">
-                        <dt className="text-muted-foreground">Time on world entry</dt>
+            {enabled && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Badge variant="outline">
+                        <span className="font-normal text-muted-foreground">Entry</span>
+                        <span className="tabular-nums">{entryTime}</span>
+                    </Badge>
 
-                        <dd className="shrink-0 font-medium tabular-nums">{entryTime}</dd>
-                    </div>
+                    <Badge variant="outline">
+                        <span className="font-normal text-muted-foreground">Day</span>
+                        <span className="tabular-nums">{formattedDayLength}</span>
+                    </Badge>
 
-                    <div className="flex items-baseline justify-between gap-4 py-3">
-                        <dt className="text-muted-foreground">Reset on server sync</dt>
-
-                        <dd className="shrink-0 font-medium">{resetOnServerSync ? 'On' : 'Off'}</dd>
-                    </div>
-
-                    <div className="flex items-baseline justify-between gap-4 py-3 last:pb-0">
-                        <dt className="text-muted-foreground">Day length</dt>
-
-                        <dd className="shrink-0 font-medium tabular-nums">
-                            {dayLengthSeconds} seconds
-                        </dd>
-                    </div>
-                </dl>
-
-                <p className="mt-4 border-t pt-3 text-xs leading-relaxed text-muted-foreground">
-                    A full in-game day takes {dayLengthSeconds} real-world seconds.
-                    {resetOnServerSync && ' Server sync resets the clock to the entry time.'}
-                </p>
-            </CardContent>
-        </Card>
+                    <Badge variant="outline">
+                        <span className="font-normal text-muted-foreground">Sync reset</span>
+                        {resetOnServerSync ? 'On' : 'Off'}
+                    </Badge>
+                </div>
+            )}
+        </div>
     )
 }

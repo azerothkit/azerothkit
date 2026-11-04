@@ -1,4 +1,4 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui/components/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui'
 
 export const LogsScreen = () => {
     return (

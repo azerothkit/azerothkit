@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>F client badge</title>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#389ac7"/>
+      <stop offset="0.6" stop-color="#1b668d"/>
+      <stop offset="1" stop-color="#15364d"/>
+    </radialGradient>
+    <linearGradient id="foreground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f6fb"/>
+      <stop offset="1" stop-color="#aebed0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="59" fill="url(#background)" stroke="url(#foreground)" stroke-width="3"/>
+  <path d="M46 35H85V46H58V60H80V71H58V93H46Z" fill="url(#foreground)" fill-rule="evenodd"/>
+</svg>

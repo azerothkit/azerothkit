@@ -23,7 +23,7 @@ fn export_bindings(
     builder: &tauri_specta::Builder<tauri::Wry>,
 ) {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../src/bindings.ts");
+        .join("../src/shared/api/rust/bindings.ts");
 
     std::fs::create_dir_all(
         path.parent().expect("Bindings path must have a parent"),
