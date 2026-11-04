@@ -63,7 +63,7 @@ pub fn run() {
 
 pub fn export_typescript_bindings() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../src/bindings.ts");
+        .join("../src/shared/api/rust/bindings.ts");
 
     command_builder()
         .export(specta_typescript::Typescript::default(), &path)
