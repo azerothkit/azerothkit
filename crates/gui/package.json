@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "lint": "expo lint",
     "format": "oxfmt .",
-    "format:check": "oxfmt --check ."
+    "format:check": "oxfmt --check .",
+    "bindings": "cargo run --manifest-path src-tauri/Cargo.toml --bin export-bindings"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

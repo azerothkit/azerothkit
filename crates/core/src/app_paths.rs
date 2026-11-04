@@ -40,4 +40,8 @@ impl AppPaths {
     pub fn ca_certificate(&self) -> PathBuf {
         self.tls_dir().join("azerothkit-ca-cert.pem")
     }
+
+    pub fn settings_file(&self) -> PathBuf {
+        self.config_dir.join("settings.json")
+    }
 }
